@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Volumetric Letters with Planes</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize the scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Add ambient light to the scene
+        const light = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(light);
+
+        // Create a grid of text and multiple planes to stack along the Z-axis
+        const fontLoader = new THREE.FontLoader();
+        fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+            const gridSize = 10;  // Number of items in each dimension for each plane
+            const spacing = 1;    // Spacing between letters
+            const speed = 0.1;    // Speed of movement in the Z direction
+            const maxZ = 6;      // Maximum Z value before resetting position
+            const numPlanes = 25; // Number of back-to-back planes to create the volumetric effect
+            const planeSpacing = maxZ / numPlanes * 2;  // Distance between each plane
+            const letters = [];
+
+            // Function to create and return a new letter mesh
+            function createLetter(char, font, x, y, z) {
+                const textGeometry = new THREE.TextBufferGeometry(char, {
+                    font: font,
+                    size: 0.5,
+                    height: 0.1
+                });
+                const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 1 });
+                const textMesh = new THREE.Mesh(textGeometry, material);
+                textMesh.position.set(x, y, z);
+                return textMesh;
+            }
+
+            // Create multiple planes of letters
+            for (let p = 0; p < numPlanes; p++) {
+                const zOffset = -maxZ + p * planeSpacing;  // Stack planes along Z-axis
+                for (let x = 0; x < gridSize; x++) {
+                    for (let y = 0; y < gridSize; y++) {
+                        const char = 'X';  // Character to display
+                        const textMesh = createLetter(char, font,
+                            x * spacing - (gridSize * spacing) / 2,
+                            y * spacing - (gridSize * spacing) / 2,
+                            zOffset  // Offset each plane along Z-axis
+                        );
+                        letters.push(textMesh);
+                        scene.add(textMesh);
+                    }
+                }
+            }
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                letters.forEach(letter => {
+                    // Move each letter (each plane) in the Z direction
+                    letter.position.z += speed;
+
+                    // Reset position to the back of the "cube" once it passes the front
+                    if (letter.material.opacity < 0) {
+                        letter.position.z = -maxZ ;  // Move back behind the last plane
+                    }
+
+                    // Calculate color and opacity based on Z position
+                    const normalizedZ = (letter.position.z + maxZ) / (2 * maxZ);  // Normalize Z from 0 to 1
+                    letter.material.color.setHSL(0.6, 1, 0.5 + normalizedZ * 0.5); // Blue to white (HSL color)
+                    letter.material.opacity = 1 - normalizedZ;  // Fade from visible to invisible
+                });
+
+                renderer.render(scene, camera);
+            }
+
+            // Position the camera to look at the cube of letters
+            camera.position.x = gridSize * 1.2;
+            camera.position.y = gridSize * 1.2;  // Move up on Y-axis
+            camera.position.z = gridSize * 1.2;  // Keep distance on Z-axis
+            // camera.rotation.x = -Math.PI / 4;  // Tilt down (45-degree angle)
+            // camera.rotation.y = Math.PI / 4;  // Tilt down (45-degree angle)
+            // camera.rotation.z =  Math.PI / 2;
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+            animate();
+        });
+    </script>
+</body>
+</html>
