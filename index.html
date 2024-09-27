@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Volumetric Letters with Planes</title>
+    <title>Come catturare un'upupa</title>
     <style>
         body {
             margin: 0;
@@ -28,12 +28,13 @@
         // Create a grid of text and multiple planes to stack along the Z-axis
         const fontLoader = new THREE.FontLoader();
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
-            const gridSize = 10;  // Number of items in each dimension for each plane
+            const gridSize = 50;  // Number of items in each dimension for each plane
             const spacing = 1;    // Spacing between letters
             const speed = 0.1;    // Speed of movement in the Z direction
             const maxZ = 6;      // Maximum Z value before resetting position
-            const numPlanes = 50; // Number of back-to-back planes to create the volumetric effect
-            const planeSpacing = (2*maxZ+20) / numPlanes ;  // Distance between each plane
+            const numPlanes = 5; // Number of back-to-back planes to create the volumetric effect
+            const planeSpacing = 0.8 ;  // Distance between each plane
+            // const planeSpacing = (2*maxZ+20) / numPlanes ;  // Distance between each plane
             const letters = [];
 
             // Function to create and return a new letter mesh
@@ -56,7 +57,7 @@
                     for (let y = 0; y < gridSize; y++) {
                         let asciiValue = Math.floor(Math.random() * 94) + 1 + 32;
                         const char = String.fromCharCode(asciiValue);  // Character to display
-                        const textMesh = createLetter('0', font,
+                        const textMesh = createLetter(char, font,
                             x * spacing - (gridSize * spacing) / 2,
                             y * spacing - (gridSize * spacing) / 2,
                             zOffset  // Offset each plane along Z-axis
@@ -67,11 +68,14 @@
                 }
             }
 
-            // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
+
                 // console.log(letters[2].position);
-                letters.forEach(letter => {
+                letters.forEach((letter, index) => {
+
+                    let prevZPosition = {};
+
                     // Move each letter (each plane) in the Z direction
                     letter.position.z += speed*2;
 
@@ -90,9 +94,9 @@
             }
 
             // Position the camera to look at the cube of letters
-            camera.position.x = gridSize * 1.2;
-            camera.position.y = gridSize * 1.2;  // Move up on Y-axis
-            camera.position.z = gridSize * 1.2;  // Keep distance on Z-axis
+            camera.position.x = gridSize * 0.5;
+            camera.position.y = gridSize * 0.5;  // Move up on Y-axis
+            camera.position.z = gridSize * 0.5;  // Keep distance on Z-axis
             // camera.rotation.x = -Math.PI / 4;  // Tilt down (45-degree angle)
             // camera.rotation.y = Math.PI / 4;  // Tilt down (45-degree angle)
             // camera.rotation.z =  Math.PI / 2;

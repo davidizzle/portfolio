@@ -25,7 +25,8 @@ x = md.data[0,:]
 y = md.data[1,:]
 z = md.data[2,:]
 
-grid_size = (50, 50, 50)
+# grid_size = (50, 50, 50)
+# grid_size = (30, 30, 30)
 
 # Initialize an empty voxel grid with False values
 voxel_grid = np.zeros(grid_size, dtype=bool)
