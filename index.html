@@ -32,8 +32,8 @@
             const spacing = 1;    // Spacing between letters
             const speed = 0.1;    // Speed of movement in the Z direction
             const maxZ = 6;      // Maximum Z value before resetting position
-            const numPlanes = 25; // Number of back-to-back planes to create the volumetric effect
-            const planeSpacing = maxZ / numPlanes * 2;  // Distance between each plane
+            const numPlanes = 50; // Number of back-to-back planes to create the volumetric effect
+            const planeSpacing = (2*maxZ+20) / numPlanes ;  // Distance between each plane
             const letters = [];
 
             // Function to create and return a new letter mesh
@@ -51,11 +51,12 @@
 
             // Create multiple planes of letters
             for (let p = 0; p < numPlanes; p++) {
-                const zOffset = -maxZ + p * planeSpacing;  // Stack planes along Z-axis
+                const zOffset = -20 -maxZ + p * planeSpacing;  // Stack planes along Z-axis
                 for (let x = 0; x < gridSize; x++) {
                     for (let y = 0; y < gridSize; y++) {
-                        const char = 'X';  // Character to display
-                        const textMesh = createLetter(char, font,
+                        let asciiValue = Math.floor(Math.random() * 94) + 1 + 32;
+                        const char = String.fromCharCode(asciiValue);  // Character to display
+                        const textMesh = createLetter('0', font,
                             x * spacing - (gridSize * spacing) / 2,
                             y * spacing - (gridSize * spacing) / 2,
                             zOffset  // Offset each plane along Z-axis
@@ -69,14 +70,14 @@
             // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
-
+                // console.log(letters[2].position);
                 letters.forEach(letter => {
                     // Move each letter (each plane) in the Z direction
-                    letter.position.z += speed;
+                    letter.position.z += speed*2;
 
                     // Reset position to the back of the "cube" once it passes the front
                     if (letter.material.opacity < 0) {
-                        letter.position.z = -maxZ ;  // Move back behind the last plane
+                        letter.position.z = -maxZ - 20 ;  // Move back behind the last plane
                     }
 
                     // Calculate color and opacity based on Z position
