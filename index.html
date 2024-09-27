@@ -25,84 +25,67 @@
         const light = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(light);
 
-        // Create a grid of text and multiple planes to stack along the Z-axis
-        const fontLoader = new THREE.FontLoader();
-        fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
-            const gridSize = 50;  // Number of items in each dimension for each plane
-            const spacing = 1;    // Spacing between letters
-            const speed = 0.1;    // Speed of movement in the Z direction
-            const maxZ = 6;      // Maximum Z value before resetting position
-            const numPlanes = 5; // Number of back-to-back planes to create the volumetric effect
-            const planeSpacing = 0.8 ;  // Distance between each plane
-            // const planeSpacing = (2*maxZ+20) / numPlanes ;  // Distance between each plane
-            const letters = [];
+        // Create a grid of spheres and multiple planes to stack along the Z-axis
+        const gridSize = 20;  // Number of items in each dimension for each plane
+        const spacing = 0.8;    // Spacing between spheres
+        const speed = 0.1;    // Speed of movement in the Z direction
+        const maxZ = 6;      // Maximum Z value before resetting position
+        const numPlanes = 20; // Number of back-to-back planes to create the volumetric effect
+        const planeSpacing = (maxZ * 2 + 20)  / numPlanes;  // Distance between each plane
+        const spheres = [];
 
-            // Function to create and return a new letter mesh
-            function createLetter(char, font, x, y, z) {
-                const textGeometry = new THREE.TextBufferGeometry(char, {
-                    font: font,
-                    size: 0.5,
-                    height: 0.1
-                });
-                const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 1 });
-                const textMesh = new THREE.Mesh(textGeometry, material);
-                textMesh.position.set(x, y, z);
-                return textMesh;
-            }
+        // Function to create and return a new sphere mesh
+        function createSphere(x, y, z) {
+            const geometry = new THREE.SphereGeometry(0.06, 0.5, 0.5); // Sphere size and resolution
+            const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 1 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(x, y, z);
+            return sphere;
+        }
 
-            // Create multiple planes of letters
-            for (let p = 0; p < numPlanes; p++) {
-                const zOffset = -20 -maxZ + p * planeSpacing;  // Stack planes along Z-axis
-                for (let x = 0; x < gridSize; x++) {
-                    for (let y = 0; y < gridSize; y++) {
-                        let asciiValue = Math.floor(Math.random() * 94) + 1 + 32;
-                        const char = String.fromCharCode(asciiValue);  // Character to display
-                        const textMesh = createLetter(char, font,
-                            x * spacing - (gridSize * spacing) / 2,
-                            y * spacing - (gridSize * spacing) / 2,
-                            zOffset  // Offset each plane along Z-axis
-                        );
-                        letters.push(textMesh);
-                        scene.add(textMesh);
-                    }
+        // Create multiple planes of spheres
+        for (let p = 0; p < numPlanes; p++) {
+            const zOffset = -20 -maxZ + p * planeSpacing;  // Stack planes along Z-axis
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    const sphere = createSphere(
+                        x * spacing - (gridSize * spacing) / 2,
+                        y * spacing - (gridSize * spacing) / 2,
+                        zOffset  // Offset each plane along Z-axis
+                    );
+                    spheres.push(sphere);
+                    scene.add(sphere);
                 }
             }
+        }
 
-            function animate() {
-                requestAnimationFrame(animate);
+        function animate() {
+            requestAnimationFrame(animate);
 
-                // console.log(letters[2].position);
-                letters.forEach((letter, index) => {
+            spheres.forEach((sphere, index) => {
+                // Move each sphere (each plane) in the Z direction
+                sphere.position.z += speed*5;
 
-                    let prevZPosition = {};
+                // Reset position to the back of the "cube" once it passes the front
+                if (sphere.position.z > maxZ) {
+                    sphere.position.z = -maxZ - 20;  // Move back behind the last plane
+                }
 
-                    // Move each letter (each plane) in the Z direction
-                    letter.position.z += speed*2;
+                // Calculate color and opacity based on Z position
+                const normalizedZ = (sphere.position.z + maxZ) / (2 * maxZ);  // Normalize Z from 0 to 1
+                sphere.material.color.setHSL(0.6, 1, 0.5 + normalizedZ * 0.5); // Blue to white (HSL color)
+                sphere.material.opacity = 1 - normalizedZ;  // Fade from visible to invisible
+            });
 
-                    // Reset position to the back of the "cube" once it passes the front
-                    if (letter.material.opacity < 0) {
-                        letter.position.z = -maxZ - 20 ;  // Move back behind the last plane
-                    }
+            renderer.render(scene, camera);
+        }
 
-                    // Calculate color and opacity based on Z position
-                    const normalizedZ = (letter.position.z + maxZ) / (2 * maxZ);  // Normalize Z from 0 to 1
-                    letter.material.color.setHSL(0.6, 1, 0.5 + normalizedZ * 0.5); // Blue to white (HSL color)
-                    letter.material.opacity = 1 - normalizedZ;  // Fade from visible to invisible
-                });
-
-                renderer.render(scene, camera);
-            }
-
-            // Position the camera to look at the cube of letters
-            camera.position.x = gridSize * 0.5;
-            camera.position.y = gridSize * 0.5;  // Move up on Y-axis
-            camera.position.z = gridSize * 0.5;  // Keep distance on Z-axis
-            // camera.rotation.x = -Math.PI / 4;  // Tilt down (45-degree angle)
-            // camera.rotation.y = Math.PI / 4;  // Tilt down (45-degree angle)
-            // camera.rotation.z =  Math.PI / 2;
-            camera.lookAt(new THREE.Vector3(0, 0, 0));
-            animate();
-        });
+        // Position the camera to look at the cube of spheres
+        camera.position.x = gridSize * 0.5;
+        camera.position.y = gridSize * 0.5;  // Move up on Y-axis
+        camera.position.z = gridSize * 0.5;  // Keep distance on Z-axis
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        animate();
     </script>
 </body>
 </html>
