@@ -19,7 +19,7 @@ with open('todo.binvox', 'rb') as f:
     md = binvox_rw.read_as_coord_array(f)
 
 # Rotate
-md = np.dot(rotation_matrix, md)
+md.data = np.dot(rotation_matrix, md.data)
 
 x = md.data[0,:]
 y = md.data[1,:]
