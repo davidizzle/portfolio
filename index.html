@@ -25,19 +25,36 @@
         const light = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(light);
 
+        // JSON object containing 3D coordinates
+        let jsonCoordinates = [];
+        fetch('array_data.json')
+            .then(response => response.json())
+            .then(data => {
+                jsonCoordinates = data;  // Store the JSON data
+                console.log('JSON Coordinates loaded:', jsonCoordinates);
+            })
+            .catch(error => console.error('Error loading JSON:', error));
+
         // Create a grid of spheres and multiple planes to stack along the Z-axis
-        const gridSize = 20;  // Number of items in each dimension for each plane
-        const spacing = 0.8;    // Spacing between spheres
+        const gridSize = 30;  // Number of items in each dimension for each plane
+        const spacing = 1;    // Spacing between spheres
         const speed = 0.1;    // Speed of movement in the Z direction
         const maxZ = 6;      // Maximum Z value before resetting position
         const numPlanes = 20; // Number of back-to-back planes to create the volumetric effect
-        const planeSpacing = (maxZ * 2 + 20)  / numPlanes;  // Distance between each plane
+        const planeSpacing = (maxZ * 2 + 20) / numPlanes;  // Distance between each plane
         const spheres = [];
 
         // Function to create and return a new sphere mesh
         function createSphere(x, y, z) {
-            const geometry = new THREE.SphereGeometry(0.06, 0.5, 0.5); // Sphere size and resolution
-            const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 1 });
+            const geometry = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                0.0, 0.1, 0.0,   // Vertex 1
+            -0.1, -0.1, 0.0,  // Vertex 2
+                0.1, -0.1, 0.0   // Vertex 3
+            ]);
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 }); // Default to white
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(x, y, z);
             return sphere;
@@ -45,7 +62,7 @@
 
         // Create multiple planes of spheres
         for (let p = 0; p < numPlanes; p++) {
-            const zOffset = -20 -maxZ + p * planeSpacing;  // Stack planes along Z-axis
+            const zOffset = -20 - maxZ + p * planeSpacing;  // Stack planes along Z-axis
             for (let x = 0; x < gridSize; x++) {
                 for (let y = 0; y < gridSize; y++) {
                     const sphere = createSphere(
@@ -59,22 +76,48 @@
             }
         }
 
+        // Scaling factor to map the JSON coordinates to the sphere grid space
+        const scalingFactor = 10;  // Adjust as needed based on your specific data range
+
+        // Function to remap JSON coordinates to the sphere grid space
+        // function mapJsonToGridPosition(coord) {
+        //     return {
+        //         x: coord.x * scalingFactor - (gridSize * spacing) / 2,
+        //         y: coord.y * scalingFactor - (gridSize * spacing) / 2,
+        //         z: coord.z * scalingFactor - maxZ
+        //     };
+        // }
+
+        // Function to check if a sphere's position is approximately in the remapped JSON coordinates
+        function isCloseToJsonPosition(spherePosition) {
+            const threshold = 10;  // Adjust for how close the positions should be to match
+            return jsonCoordinates.some(coord => {
+                let mappedCoord = coord;  // Remap JSON coordinates
+                const dx = Math.abs(spherePosition.x - mappedCoord.x);
+                const dy = Math.abs(spherePosition.y - mappedCoord.y);
+                const dz = Math.abs(spherePosition.z - mappedCoord.z);
+                return dx < threshold && dy < threshold && dz < threshold;
+            });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
             spheres.forEach((sphere, index) => {
                 // Move each sphere (each plane) in the Z direction
-                sphere.position.z += speed*5;
+                sphere.position.z += speed * 5;
 
                 // Reset position to the back of the "cube" once it passes the front
                 if (sphere.position.z > maxZ) {
                     sphere.position.z = -maxZ - 20;  // Move back behind the last plane
                 }
 
-                // Calculate color and opacity based on Z position
-                const normalizedZ = (sphere.position.z + maxZ) / (2 * maxZ);  // Normalize Z from 0 to 1
-                sphere.material.color.setHSL(0.6, 1, 0.5 + normalizedZ * 0.5); // Blue to white (HSL color)
-                sphere.material.opacity = 1 - normalizedZ;  // Fade from visible to invisible
+                // Change color based on proximity to remapped JSON coordinates
+                if (isCloseToJsonPosition(sphere.position)) {
+                    sphere.material.color.set(0x0000ff); // Change color to blue if match is found
+                } else {
+                    sphere.material.color.set(0xffffff); // Set to white otherwise
+                }
             });
 
             renderer.render(scene, camera);
