@@ -3,132 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Come catturare un'upupa</title>
+    <title>Three.js Scene with Orbit Controls</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
+        body { margin: 0; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // Initialize the scene, camera, and renderer
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script> -->
+    <script type="module">
+        // Set up scene, camera, and renderer
+        import { OrbitControls } from "/three/examples/jsm/controls/OrbitControls"
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Add ambient light to the scene
-        const light = new THREE.AmbientLight(0xffffff, 0.8);
+        // Set up a basic light
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5).normalize();
         scene.add(light);
 
-        // JSON object containing 3D coordinates
-        let jsonCoordinates = [];
-        fetch('array_data.json')
+        // Set up OrbitControls
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // Load the JSON file with coordinates as nested arrays
+        const url = 'path_to_your_json_file.json'; // Path to your JSON file
+
+        fetch(url)
             .then(response => response.json())
             .then(data => {
-                jsonCoordinates = data;  // Store the JSON data
-                console.log('JSON Coordinates loaded:', jsonCoordinates);
+                // Assuming data is an array like [[x], [y], [z]]
+                const [xArray, yArray, zArray] = data;
+
+                if (xArray.length !== yArray.length || yArray.length !== zArray.length) {
+                    console.error('The arrays x, y, and z must have the same length.');
+                    return;
+                }
+
+                const geometry = new THREE.SphereGeometry(0.1, 32, 32);
+                const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+                // Iterate over the coordinates and create a sphere at each point
+                for (let i = 0; i < xArray.length; i++) {
+                    const sphere = new THREE.Mesh(geometry, material);
+                    sphere.position.set(xArray[i], yArray[i], zArray[i]);
+                    scene.add(sphere);
+                }
+
+                // Set initial camera position
+                camera.position.set(50, 50, 50);
+                controls.update();
+
+                // Start rendering the scene
+                const animate = function () {
+                    requestAnimationFrame(animate);
+
+                    // Update controls
+                    controls.update();
+
+                    renderer.render(scene, camera);
+                };
+
+                animate();
             })
             .catch(error => console.error('Error loading JSON:', error));
 
-        // Create a grid of spheres and multiple planes to stack along the Z-axis
-        const gridSize = 30;  // Number of items in each dimension for each plane
-        const spacing = 1;    // Spacing between spheres
-        const speed = 0.1;    // Speed of movement in the Z direction
-        const maxZ = 6;      // Maximum Z value before resetting position
-        const numPlanes = 20; // Number of back-to-back planes to create the volumetric effect
-        const planeSpacing = (maxZ * 2 + 20) / numPlanes;  // Distance between each plane
-        const spheres = [];
-
-        // Function to create and return a new sphere mesh
-        function createSphere(x, y, z) {
-            const geometry = new THREE.BufferGeometry();
-            const vertices = new Float32Array([
-                0.0, 0.1, 0.0,   // Vertex 1
-            -0.1, -0.1, 0.0,  // Vertex 2
-                0.1, -0.1, 0.0   // Vertex 3
-            ]);
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-            const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 }); // Default to white
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(x, y, z);
-            return sphere;
-        }
-
-        // Create multiple planes of spheres
-        for (let p = 0; p < numPlanes; p++) {
-            const zOffset = -20 - maxZ + p * planeSpacing;  // Stack planes along Z-axis
-            for (let x = 0; x < gridSize; x++) {
-                for (let y = 0; y < gridSize; y++) {
-                    const sphere = createSphere(
-                        x * spacing - (gridSize * spacing) / 2,
-                        y * spacing - (gridSize * spacing) / 2,
-                        zOffset  // Offset each plane along Z-axis
-                    );
-                    spheres.push(sphere);
-                    scene.add(sphere);
-                }
-            }
-        }
-
-        // Scaling factor to map the JSON coordinates to the sphere grid space
-        const scalingFactor = 10;  // Adjust as needed based on your specific data range
-
-        // Function to remap JSON coordinates to the sphere grid space
-        // function mapJsonToGridPosition(coord) {
-        //     return {
-        //         x: coord.x * scalingFactor - (gridSize * spacing) / 2,
-        //         y: coord.y * scalingFactor - (gridSize * spacing) / 2,
-        //         z: coord.z * scalingFactor - maxZ
-        //     };
-        // }
-
-        // Function to check if a sphere's position is approximately in the remapped JSON coordinates
-        function isCloseToJsonPosition(spherePosition) {
-            const threshold = 10;  // Adjust for how close the positions should be to match
-            return jsonCoordinates.some(coord => {
-                let mappedCoord = coord;  // Remap JSON coordinates
-                const dx = Math.abs(spherePosition.x - mappedCoord.x);
-                const dy = Math.abs(spherePosition.y - mappedCoord.y);
-                const dz = Math.abs(spherePosition.z - mappedCoord.z);
-                return dx < threshold && dy < threshold && dz < threshold;
-            });
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            spheres.forEach((sphere, index) => {
-                // Move each sphere (each plane) in the Z direction
-                sphere.position.z += speed * 5;
-
-                // Reset position to the back of the "cube" once it passes the front
-                if (sphere.position.z > maxZ) {
-                    sphere.position.z = -maxZ - 20;  // Move back behind the last plane
-                }
-
-                // Change color based on proximity to remapped JSON coordinates
-                if (isCloseToJsonPosition(sphere.position)) {
-                    sphere.material.color.set(0x0000ff); // Change color to blue if match is found
-                } else {
-                    sphere.material.color.set(0xffffff); // Set to white otherwise
-                }
-            });
-
-            renderer.render(scene, camera);
-        }
-
-        // Position the camera to look at the cube of spheres
-        camera.position.x = gridSize * 0.5;
-        camera.position.y = gridSize * 0.5;  // Move up on Y-axis
-        camera.position.z = gridSize * 0.5;  // Keep distance on Z-axis
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
-        animate();
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
     </script>
 </body>
 </html>
