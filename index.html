@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Scene with Orbit Controls</title>
+    <title>Spheres Connected by Lines from JSON</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -11,68 +11,166 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script> -->
-    <script type="module">
-        // Set up scene, camera, and renderer
-        import { OrbitControls } from "/three/examples/jsm/controls/OrbitControls"
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(70, 50, 100);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Set up a basic light
+        // Orbit Controls to navigate the scene
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        
+        // Light for the scene
+        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Soft white light
+        scene.add(ambientLight);
+        
         const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 5, 5).normalize();
+        light.position.set(1, 1, 1).normalize();
         scene.add(light);
 
-        // Set up OrbitControls
-        const controls = new OrbitControls(camera, renderer.domElement);
+        // Sphere geometry and material for the vertices
+        const sphereGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+        const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0x6dd8fc });
 
-        // Load the JSON file with coordinates as nested arrays
-        const url = 'path_to_your_json_file.json'; // Path to your JSON file
+        let spheres = [];
+        let lines; // To hold the lines connecting the spheres
+        let faces; // Global variable to store faces data
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                // Assuming data is an array like [[x], [y], [z]]
-                const [xArray, yArray, zArray] = data;
+        function loadJSON(url) {
+            return fetch(url)
+                .then(response => response.json())
+                .catch(error => console.error('Error loading JSON:', error));
+        }
 
-                if (xArray.length !== yArray.length || yArray.length !== zArray.length) {
-                    console.error('The arrays x, y, and z must have the same length.');
-                    return;
+        function updateScene(data) {
+            // Clear existing spheres and lines
+            spheres.forEach(sphere => scene.remove(sphere));
+            if (lines) {
+                scene.remove(lines);
+            }
+
+            spheres = []; // Reset spheres array
+            const vertices = data.vertices;
+            faces = data.faces; // Store faces data globally
+
+            // console.log("Vertices:", vertices);
+            // console.log("Faces:", faces);
+
+            // Ensure faces is defined and iterable
+            if (!Array.isArray(faces)) {
+                console.error("Faces data is not in expected array format:", faces);
+                return; // Exit if faces are not iterable
+            }
+
+            // Create spheres for each vertex position
+            for (let i = 0; i < vertices.length; i += 3) {
+                const x = vertices[i];
+                const y = vertices[i + 1];
+                const z = vertices[i + 2];
+
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.position.set(x, y, z);
+                sphere.seed = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
+                scene.add(sphere);
+                spheres.push(sphere);
+            }
+
+            // Initialize line material and create lines based on faces
+            updateLines(); // Create initial lines based on faces
+        }
+
+        function updateLines() {
+
+            if (lines) {
+                scene.remove(lines);
+                lines.geometry.dispose(); // Dispose the geometry to free memory
+                lines.material.dispose(); // Dispose the material to free memory
+                lines = null; // Set lines to null after removal
+            }
+
+
+            const lineGeometry = new THREE.BufferGeometry();
+            const lineVertices = [];
+
+            // Loop through each face
+            for (const face of faces) {
+                for (let j = 0; j < face.length; j++) {
+                    const startIndex = face[j]; // Get vertex index for the start of the line
+                    const endIndex = face[(j + 1) % face.length]; // Wrap around to connect the last vertex to the first
+
+                    lineVertices.push(
+                        spheres[startIndex].position.x, spheres[startIndex].position.y, spheres[startIndex].position.z,
+                        spheres[endIndex].position.x, spheres[endIndex].position.y, spheres[endIndex].position.z
+                    );
                 }
+            }
 
-                const geometry = new THREE.SphereGeometry(0.1, 32, 32);
-                const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            // Set the vertices to the line geometry
+            lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
+            
+            // Create line material with transparency and opacity
+            const lineMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xffffff, 
+                transparent: true, // Enable transparency
+                opacity: 0.08 // Set opacity (0 = transparent, 1 = opaque)
+            });
+            lineMaterial.depthWrite = false;
+            
+            lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+            scene.add(lines);
+        }
 
-                // Iterate over the coordinates and create a sphere at each point
-                for (let i = 0; i < xArray.length; i++) {
-                    const sphere = new THREE.Mesh(geometry, material);
-                    sphere.position.set(xArray[i], yArray[i], zArray[i]);
-                    scene.add(sphere);
-                }
+        // Load initial JSON file
+        loadJSON('obj/bull.json') // Replace with your initial JSON file path
+            .then(updateScene);
 
-                // Set initial camera position
-                camera.position.set(50, 50, 50);
-                controls.update();
+        // Update the scene on click
+        window.addEventListener('click', () => {
+            // Load new JSON file on click
+            loadJSON('obj/parsed.json') // Replace with the path to your new JSON file
+                .then(updateScene);
+        });
 
-                // Start rendering the scene
-                const animate = function () {
-                    requestAnimationFrame(animate);
+        // Slower jiggle effect
+        let Time = 0; // Time variable for slow jiggle
+        const timeSpeed = 0.05; // Speed of jiggle
+        function jiggleSpheres() {
+            spheres.forEach(sphere => {
+                const jiggleFactor = 0.005;
+                const offset_x = Math.sin(Time + sphere.seed) * jiggleFactor;
+                const offset_y = Math.sin(Time + sphere.seed * 1.1) * jiggleFactor;
+                const offset_z = Math.sin(Time + sphere.seed * 1.5) * jiggleFactor;
+                sphere.position.x += offset_x;
+                sphere.position.y += offset_y;
+                sphere.position.z += offset_z;
+            });
+            Time += timeSpeed; // Increment time for the next frame
 
-                    // Update controls
-                    controls.update();
+            // Update lines after jiggling the spheres
+            if (lines) {
+                updateLines(); // Use the global faces variable
+            }
+        }
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            jiggleSpheres(); // Call the jiggle function
+            controls.update();
+            renderer.render(scene, camera);
+            console.log(spheres);
+        }
 
-                    renderer.render(scene, camera);
-                };
-
-                animate();
-            })
-            .catch(error => console.error('Error loading JSON:', error));
-
+        animate();
+        
         // Handle window resize
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
