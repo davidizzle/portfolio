@@ -134,6 +134,9 @@
         }
         
         function transitionToNewPositions(newVertices) {
+
+            const newTargetPositions = [];
+
             // Update target positions based on new vertex data
             for (let i = 0; i < newVertices.length; i += 3) {
                 const x = newVertices[i];
@@ -141,28 +144,18 @@
                 const z = newVertices[i + 2];
                 
                 // Set the target position for each sphere
-                targetPositions[i / 3] = new THREE.Vector3(x, y, z);
+                newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
             }
+
+            // Handle unchanged indices
+            for (let i = 0; i < spheres.length; i++) {
+                if (newTargetPositions[i] === undefined) {
+                    newTargetPositions[i] = targetPositions[i]; // Keep current position for unused spheres
+                }
+            }
+
+            targetPositions = newTargetPositions; // Update the target positions
         }
-
-        // Load initial JSON file
-        loadJSON('obj/parsed.json') // Replace with your initial JSON file path
-            .then(updateScene);
-
-        // Update the scene on click
-        window.addEventListener('click', () => {
-            // Load new JSON file on click
-            loadJSON('obj/bull.json') // Replace with the path to your new JSON file
-                .then(data => {
-                    scene.remove(lines);
-                    lines.geometry.dispose(); // Dispose the geometry to free memory
-                    lines.material.dispose(); // Dispose the material to free memory
-                    lines = null; // Set lines to null after removal
-                    transitionToNewPositions(data.vertices);
-                    faces = data.faces;
-
-                });
-        });
 
         // Slower jiggle effect
         let Time = 0; // Time variable for slow jiggle
@@ -181,7 +174,19 @@
                 sphere.position.z += offset_z;
 
                 // Interpolate positions towards target
-                sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transitio
+                if (targetPositions[index]) {
+                    sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
+                }
+
+                // If the target position is unchanged, spin around the object
+                if (!targetPositions[index]) {
+                            const radius = 2; // Radius of the circular motion
+                            const spinSpeed = 0.1; // Speed of the spin
+                            sphere.position.x = Math.cos(Time * spinSpeed + sphere.seed) * radius;
+                            sphere.position.z = Math.sin(Time * spinSpeed + sphere.seed) * radius;
+                            // Maintain original y position
+                            sphere.position.y = sphere.position.y; // Preserve the original y position
+                        }
 
                 const distance = sphere.position.distanceTo(targetPositions[index]);
                 if (distance > margin) {
@@ -196,6 +201,31 @@
                 updateLines(); // Use the global faces variable
             }
         }
+
+        // Function to handle loading new JSON data
+        function loadNewJSON() {
+            loadJSON('obj/bull.json') // Replace with the path to your new JSON file
+                .then(data => {
+                    scene.remove(lines);
+                    lines.geometry.dispose(); // Dispose the geometry to free memory
+                    lines.material.dispose(); // Dispose the material to free memory
+                    lines = null; // Set lines to null after removal
+                    transitionToNewPositions(data.vertices);
+                    faces = data.faces;
+                });
+        }
+
+        // Load initial JSON file
+        loadJSON('obj/parsed.json') // Replace with your initial JSON file path
+            .then(updateScene);
+
+        // Update the scene on click
+        window.addEventListener('click', loadNewJSON);
+        window.addEventListener('touchStart', (event) => {
+            event.preventDefault();
+            loadNewJSON()
+        });
+
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
