@@ -221,10 +221,14 @@
 
         // Update the scene on click
         window.addEventListener('click', loadNewJSON);
-        window.addEventListener('touchStart', (event) => {
+        window.addEventListener('touchstart', (event) => {
             event.preventDefault();
-            loadNewJSON()
+            loadNewJSON();
         });
+        // window.addEventListener('touchend', (event) => {
+        //     event.preventDefault();
+        //     loadNewJSON();
+        // });
 
         // Animation loop
         function animate() {
