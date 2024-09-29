@@ -42,6 +42,7 @@
         let spheres = [];
         let lines; // To hold the lines connecting the spheres
         let faces; // Global variable to store faces data
+        let targetPositions = []; // Array to store target positions for the transition
 
         function loadJSON(url) {
             return fetch(url)
@@ -80,6 +81,9 @@
                 sphere.seed = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
                 scene.add(sphere);
                 spheres.push(sphere);
+
+                // Initialize target positions with the current positions
+                targetPositions.push(sphere.position.clone());
             }
 
             // Initialize line material and create lines based on faces
@@ -104,11 +108,13 @@
                 for (let j = 0; j < face.length; j++) {
                     const startIndex = face[j]; // Get vertex index for the start of the line
                     const endIndex = face[(j + 1) % face.length]; // Wrap around to connect the last vertex to the first
-
-                    lineVertices.push(
-                        spheres[startIndex].position.x, spheres[startIndex].position.y, spheres[startIndex].position.z,
-                        spheres[endIndex].position.x, spheres[endIndex].position.y, spheres[endIndex].position.z
-                    );
+                    
+                    // Ensure startIndex and endIndex are valid
+                    if (startIndex < spheres.length && endIndex < spheres.length) 
+                        lineVertices.push(
+                            spheres[startIndex].position.x, spheres[startIndex].position.y, spheres[startIndex].position.z,
+                            spheres[endIndex].position.x, spheres[endIndex].position.y, spheres[endIndex].position.z
+                        );
                 }
             }
 
@@ -126,23 +132,46 @@
             lines = new THREE.LineSegments(lineGeometry, lineMaterial);
             scene.add(lines);
         }
+        
+        function transitionToNewPositions(newVertices) {
+            // Update target positions based on new vertex data
+            for (let i = 0; i < newVertices.length; i += 3) {
+                const x = newVertices[i];
+                const y = newVertices[i + 1];
+                const z = newVertices[i + 2];
+                
+                // Set the target position for each sphere
+                targetPositions[i / 3] = new THREE.Vector3(x, y, z);
+            }
+        }
 
         // Load initial JSON file
-        loadJSON('obj/bull.json') // Replace with your initial JSON file path
+        loadJSON('obj/parsed.json') // Replace with your initial JSON file path
             .then(updateScene);
 
         // Update the scene on click
         window.addEventListener('click', () => {
             // Load new JSON file on click
-            loadJSON('obj/parsed.json') // Replace with the path to your new JSON file
-                .then(updateScene);
+            loadJSON('obj/bull.json') // Replace with the path to your new JSON file
+                .then(data => {
+                    scene.remove(lines);
+                    lines.geometry.dispose(); // Dispose the geometry to free memory
+                    lines.material.dispose(); // Dispose the material to free memory
+                    lines = null; // Set lines to null after removal
+                    transitionToNewPositions(data.vertices);
+                    faces = data.faces;
+
+                });
         });
 
         // Slower jiggle effect
         let Time = 0; // Time variable for slow jiggle
         const timeSpeed = 0.05; // Speed of jiggle
+        const margin = 1 // To draw lines
         function jiggleSpheres() {
-            spheres.forEach(sphere => {
+
+            let allArrived = true; // Flag to check if all spheres have arrived
+            spheres.forEach((sphere, index) => {
                 const jiggleFactor = 0.005;
                 const offset_x = Math.sin(Time + sphere.seed) * jiggleFactor;
                 const offset_y = Math.sin(Time + sphere.seed * 1.1) * jiggleFactor;
@@ -150,11 +179,20 @@
                 sphere.position.x += offset_x;
                 sphere.position.y += offset_y;
                 sphere.position.z += offset_z;
-            });
-            Time += timeSpeed; // Increment time for the next frame
 
+                // Interpolate positions towards target
+                sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transitio
+
+                const distance = sphere.position.distanceTo(targetPositions[index]);
+                if (distance > margin) {
+                    allArrived = false; // If any sphere has not arrived, set the flag to false
+                }
+            });
+
+            Time += timeSpeed; // Increment time for the next frame
+            
             // Update lines after jiggling the spheres
-            if (lines) {
+            if (allArrived) {
                 updateLines(); // Use the global faces variable
             }
         }
