@@ -44,6 +44,8 @@
         let faces; // Global variable to store faces data
         let targetPositions = []; // Array to store target positions for the transition
 
+        let currentIndex = 0;  // Track the current JSON index
+        const jsonFiles = ['obj/parsed.json', 'obj/bull.json'];  // List of JSON files to toggle between
         function loadJSON(url) {
             return fetch(url)
                 .then(response => response.json())
@@ -79,6 +81,9 @@
                 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
                 sphere.position.set(x, y, z);
                 sphere.seed = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
+                sphere.seed2 = Math.random();
+                sphere.seed3 = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
+                sphere.seed4 = Math.random();
                 scene.add(sphere);
                 spheres.push(sphere);
 
@@ -102,7 +107,7 @@
 
             const lineGeometry = new THREE.BufferGeometry();
             const lineVertices = [];
-
+            // console.log(faces);
             // Loop through each face
             for (const face of faces) {
                 for (let j = 0; j < face.length; j++) {
@@ -148,11 +153,11 @@
             }
 
             // Handle unchanged indices
-            for (let i = 0; i < spheres.length; i++) {
-                if (newTargetPositions[i] === undefined) {
-                    newTargetPositions[i] = targetPositions[i]; // Keep current position for unused spheres
-                }
-            }
+            // for (let i = 0; i < spheres.length; i++) {
+            //     if (newTargetPositions[i] === undefined) {
+            //         newTargetPositions[i] = targetPositions[i]; // Keep current position for unused spheres
+            //     }
+            // }
 
             targetPositions = newTargetPositions; // Update the target positions
         }
@@ -175,22 +180,35 @@
 
                 // Interpolate positions towards target
                 if (targetPositions[index]) {
+                    // console.log("TARGET !");
+                    // console.log(targetPositions[index]);
                     sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
                 }
 
                 // If the target position is unchanged, spin around the object
                 if (!targetPositions[index]) {
-                            const radius = 2; // Radius of the circular motion
-                            const spinSpeed = 0.1; // Speed of the spin
-                            sphere.position.x = Math.cos(Time * spinSpeed + sphere.seed) * radius;
-                            sphere.position.z = Math.sin(Time * spinSpeed + sphere.seed) * radius;
+                            // console.log("I am getting in here!");
+                            // let radius = ( Math.cos(Time * spinSpeed + sphere.seed) + 5) * 10 ; // Radius of the circular motion
+                            const spinSpeed = 0.01; // Speed of the spin
+                            sphere.theta = Time * spinSpeed * sphere.seed2 + sphere.seed;
+                            sphere.phi = Time * spinSpeed  * sphere.seed4 + sphere.seed3;
+                            sphere.radius = 100 + (Math.cos(Time * spinSpeed * 5 + sphere.seed) * sphere.seed2 * 5);
+                            sphere.radius1 = ( Math.cos(Time * spinSpeed * 50 + sphere.seed) * sphere.seed2 + 8) * 10;
+                            let y_off = 10;
+                            let x0, y0, z0;
+                            x0 = Math.cos(sphere.theta) * Math.sin(sphere.phi) * sphere.radius;
+                            z0 = Math.sin(sphere.theta) * Math.sin(sphere.phi) * sphere.radius;
+                            y0 = Math.cos(sphere.phi) * sphere.radius + y_off; // Preserve the original y position
                             // Maintain original y position
-                            sphere.position.y = sphere.position.y; // Preserve the original y position
-                        }
+                            // sphere.position.y = sphere.position.y; // Preserve the original y position
 
-                const distance = sphere.position.distanceTo(targetPositions[index]);
-                if (distance > margin) {
-                    allArrived = false; // If any sphere has not arrived, set the flag to false
+                            sphere.position.lerp(new THREE.Vector3(x0, y0, z0), 0.01);
+                        }
+                if(targetPositions[index]) {
+                    const distance = sphere.position.distanceTo(targetPositions[index]);
+                    if (distance > margin) {
+                        allArrived = false; // If any sphere has not arrived, set the flag to false
+                    }
                 }
             });
 
@@ -204,7 +222,8 @@
 
         // Function to handle loading new JSON data
         function loadNewJSON() {
-            loadJSON('obj/bull.json') // Replace with the path to your new JSON file
+            currentIndex = (currentIndex + 1) % jsonFiles.length;
+            loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
                 .then(data => {
                     scene.remove(lines);
                     lines.geometry.dispose(); // Dispose the geometry to free memory
@@ -236,7 +255,7 @@
             jiggleSpheres(); // Call the jiggle function
             controls.update();
             renderer.render(scene, camera);
-            console.log(spheres);
+            // console.log(spheres);
         }
 
         animate();
