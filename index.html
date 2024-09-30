@@ -45,7 +45,7 @@
         let targetPositions = []; // Array to store target positions for the transition
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['obj/parsed.json', 'obj/bull.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['obj/crankshaft.json', 'obj/bull.json', 'obj/antenna.json'];  // List of JSON files to toggle between
         function loadJSON(url) {
             return fetch(url)
                 .then(response => response.json())
@@ -251,7 +251,7 @@
         }
 
         // Load initial JSON file
-        loadJSON('obj/parsed.json') // Replace with your initial JSON file path
+        loadJSON('obj/crankshaft.json') // Replace with your initial JSON file path
             .then(updateScene);
 
         // Update the scene on click
