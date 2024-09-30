@@ -92,10 +92,10 @@
             }
 
             // Initialize line material and create lines based on faces
-            updateLines(); // Create initial lines based on faces
+            updateLines(0.08); // Create initial lines based on faces
         }
 
-        function updateLines() {
+        function updateLines(opac) {
 
             if (lines) {
                 scene.remove(lines);
@@ -107,6 +107,7 @@
 
             const lineGeometry = new THREE.BufferGeometry();
             const lineVertices = [];
+
             // console.log(faces);
             // Loop through each face
             for (const face of faces) {
@@ -115,13 +116,22 @@
                     const endIndex = face[(j + 1) % face.length]; // Wrap around to connect the last vertex to the first
                     
                     // Ensure startIndex and endIndex are valid
-                    if (startIndex < spheres.length && endIndex < spheres.length) 
-                        lineVertices.push(
-                            spheres[startIndex].position.x, spheres[startIndex].position.y, spheres[startIndex].position.z,
-                            spheres[endIndex].position.x, spheres[endIndex].position.y, spheres[endIndex].position.z
-                        );
+                    if (startIndex < spheres.length && endIndex < spheres.length) {
+                        const startPos = spheres[startIndex].position;
+                        const endPos = spheres[endIndex].position;
+
+                        // Push vertex positions to the line vertices array
+                        lineVertices.push(startPos.x, startPos.y, startPos.z, endPos.x, endPos.y, endPos.z);
+
+                    } 
                 }
             }
+            // Map the average line length to an opacity value (adjust this mapping as needed)
+            // This is to provide that initial brightness boost
+            const minOpacity = 0; // Minimum opacity for very short lines
+            const maxOpacity = 1; // Maximum opacity for very long lines
+            const opacity = Math.min(maxOpacity, Math.max(minOpacity, opac));
+
 
             // Set the vertices to the line geometry
             lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
@@ -130,7 +140,8 @@
             const lineMaterial = new THREE.LineBasicMaterial({ 
                 color: 0xffffff, 
                 transparent: true, // Enable transparency
-                opacity: 0.08 // Set opacity (0 = transparent, 1 = opaque)
+                // opacity: 0.08 // Set opacity (0 = transparent, 1 = opaque)
+                opacity: opacity // Set opacity (0 = transparent, 1 = opaque)
             });
             lineMaterial.depthWrite = false;
             
@@ -169,6 +180,9 @@
         function jiggleSpheres() {
 
             let allArrived = true; // Flag to check if all spheres have arrived
+            let marginTotal = 0;
+            let activeSpheres = 0;
+
             spheres.forEach((sphere, index) => {
                 const jiggleFactor = 0.005;
                 const offset_x = Math.sin(Time + sphere.seed) * jiggleFactor;
@@ -209,6 +223,8 @@
                     if (distance > margin) {
                         allArrived = false; // If any sphere has not arrived, set the flag to false
                     }
+                    marginTotal += distance;
+                    activeSpheres++;
                 }
             });
 
@@ -216,7 +232,7 @@
             
             // Update lines after jiggling the spheres
             if (allArrived) {
-                updateLines(); // Use the global faces variable
+                updateLines(marginTotal / activeSpheres ); // Use the global faces variable
             }
         }
 
