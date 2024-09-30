@@ -17,7 +17,7 @@
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(70, 50, 100);
+        camera.position.set(30, 70, 100);
         camera.lookAt(new THREE.Vector3(0, 0, 0));
 
         const renderer = new THREE.WebGLRenderer();
@@ -45,7 +45,7 @@
         let targetPositions = []; // Array to store target positions for the transition
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['obj/crankshaft.json', 'obj/bull.json', 'obj/antenna.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['obj/tidus.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antenna.json'];  // List of JSON files to toggle between
         function loadJSON(url) {
             return fetch(url)
                 .then(response => response.json())
@@ -251,7 +251,7 @@
         }
 
         // Load initial JSON file
-        loadJSON('obj/crankshaft.json') // Replace with your initial JSON file path
+        loadJSON('obj/tidus.json') // Replace with your initial JSON file path
             .then(updateScene);
 
         // Update the scene on click
