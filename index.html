@@ -45,7 +45,11 @@
         let targetPositions = []; // Array to store target positions for the transition
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['obj/tidus.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antenna.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['obj/tidus.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antennabase.json'];  // List of JSON files to toggle between
+        const auxJsonDynamic = {
+            'obj/antennabase.json': ['obj/antennatop1.json', 'obj/antennatop2.json', 'obj/antennatop3.json']
+        }
+
         function loadJSON(url) {
             return fetch(url)
                 .then(response => response.json())
@@ -149,7 +153,29 @@
             scene.add(lines);
         }
         
-        function transitionToNewPositions(newVertices) {
+        async function transitionToNewPositions(newVertices) {
+            
+            // If this is a dynamic model
+            const randomIndex = Math.floor(Math.random() * 3);
+            if ( jsonFiles[currentIndex] == 'obj/antennabase.json')
+            {
+                console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
+                await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
+                    .then( data => {
+                        // console.log("success");
+                        // console.log(newVertices);
+                        const initialVertexCount = newVertices.length;
+                        newVertices.push(...data.vertices);
+                        // console.log(data.vertices);
+                        // console.log(faces);
+                        // console.log(data.faces);
+                        const newFaces = data.faces.map(face => 
+                            face.map(index => (index + initialVertexCount / 3) % newVertices.length) // Adjust indices
+                        );
+                        faces.push(...newFaces);
+                        // console.log(faces)
+                    });
+            }
 
             const newTargetPositions = [];
 
@@ -163,20 +189,15 @@
                 newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
             }
 
-            // Handle unchanged indices
-            // for (let i = 0; i < spheres.length; i++) {
-            //     if (newTargetPositions[i] === undefined) {
-            //         newTargetPositions[i] = targetPositions[i]; // Keep current position for unused spheres
-            //     }
-            // }
-
             targetPositions = newTargetPositions; // Update the target positions
+            // console.log(targetPositions)
         }
 
         // Slower jiggle effect
         let Time = 0; // Time variable for slow jiggle
         const timeSpeed = 0.05; // Speed of jiggle
         const margin = 1 // To draw lines
+        let lastCheckedTime = 0; // Track last time the condition was checked
         function jiggleSpheres() {
 
             let allArrived = true; // Flag to check if all spheres have arrived
@@ -195,7 +216,6 @@
                 // Interpolate positions towards target
                 if (targetPositions[index]) {
                     // console.log("TARGET !");
-                    // console.log(targetPositions[index]);
                     sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
                 }
 
@@ -234,6 +254,22 @@
             if (allArrived) {
                 updateLines(marginTotal / activeSpheres ); // Use the global faces variable
             }
+
+            // If this is a dynamic model
+            const currentTime = performance.now() / 1000; // Get current time in seconds
+            if (jsonFiles[currentIndex] == 'obj/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
+            {
+                lastCheckedTime = currentTime;
+                loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
+                .then(data => {
+                    // scene.remove(lines);
+                    // lines.geometry.dispose(); // Dispose the geometry to free memory
+                    // lines.material.dispose(); // Dispose the material to free memory
+                    // lines = null; // Set lines to null after removal
+                    faces = data.faces;
+                    transitionToNewPositions(data.vertices);
+                });
+            }
         }
 
         // Function to handle loading new JSON data
@@ -245,8 +281,8 @@
                     lines.geometry.dispose(); // Dispose the geometry to free memory
                     lines.material.dispose(); // Dispose the material to free memory
                     lines = null; // Set lines to null after removal
-                    transitionToNewPositions(data.vertices);
                     faces = data.faces;
+                    transitionToNewPositions(data.vertices);
                 });
         }
 
