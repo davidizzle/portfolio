@@ -45,7 +45,9 @@
         let targetPositions = []; // Array to store target positions for the transition
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['obj/tidus.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antennabase.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['obj/nothing.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antennabase.json'];  // List of JSON files to toggle between
+        
+        // This should be deprecated in favor of animations to be honest
         const auxJsonDynamic = {
             'obj/antennabase.json': ['obj/antennatop1.json', 'obj/antennatop2.json', 'obj/antennatop3.json']
         }
@@ -67,9 +69,6 @@
             const vertices = data.vertices;
             faces = data.faces; // Store faces data globally
 
-            // console.log("Vertices:", vertices);
-            // console.log("Faces:", faces);
-
             // Ensure faces is defined and iterable
             if (!Array.isArray(faces)) {
                 console.error("Faces data is not in expected array format:", faces);
@@ -84,9 +83,10 @@
 
                 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
                 sphere.position.set(x, y, z);
-                sphere.seed = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
+                 // Unique seeds for each sphere for jiggle effect
+                sphere.seed = Math.random() * 2 * Math.PI;
                 sphere.seed2 = Math.random();
-                sphere.seed3 = Math.random() * 2 * Math.PI; // Unique seed for each sphere for jiggle effect
+                sphere.seed3 = Math.random() * 2 * Math.PI;
                 sphere.seed4 = Math.random();
                 scene.add(sphere);
                 spheres.push(sphere);
@@ -112,7 +112,6 @@
             const lineGeometry = new THREE.BufferGeometry();
             const lineVertices = [];
 
-            // console.log(faces);
             // Loop through each face
             for (const face of faces) {
                 for (let j = 0; j < face.length; j++) {
@@ -159,21 +158,15 @@
             const randomIndex = Math.floor(Math.random() * 3);
             if ( jsonFiles[currentIndex] == 'obj/antennabase.json')
             {
-                console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
+                // console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
                 await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
                     .then( data => {
-                        // console.log("success");
-                        // console.log(newVertices);
                         const initialVertexCount = newVertices.length;
                         newVertices.push(...data.vertices);
-                        // console.log(data.vertices);
-                        // console.log(faces);
-                        // console.log(data.faces);
                         const newFaces = data.faces.map(face => 
                             face.map(index => (index + initialVertexCount / 3) % newVertices.length) // Adjust indices
                         );
                         faces.push(...newFaces);
-                        // console.log(faces)
                     });
             }
 
@@ -190,7 +183,6 @@
             }
 
             targetPositions = newTargetPositions; // Update the target positions
-            // console.log(targetPositions)
         }
 
         // Slower jiggle effect
@@ -215,13 +207,11 @@
 
                 // Interpolate positions towards target
                 if (targetPositions[index]) {
-                    // console.log("TARGET !");
                     sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
                 }
 
                 // If the target position is unchanged, spin around the object
                 if (!targetPositions[index]) {
-                            // console.log("I am getting in here!");
                             // let radius = ( Math.cos(Time * spinSpeed + sphere.seed) + 5) * 10 ; // Radius of the circular motion
                             const spinSpeed = 0.01; // Speed of the spin
                             sphere.theta = Time * spinSpeed * sphere.seed2 + sphere.seed;
@@ -238,6 +228,8 @@
 
                             sphere.position.lerp(new THREE.Vector3(x0, y0, z0), 0.01);
                         }
+
+                // Only draw lines within certain margin of desired sphere position
                 if(targetPositions[index]) {
                     const distance = sphere.position.distanceTo(targetPositions[index]);
                     if (distance > margin) {
@@ -256,6 +248,7 @@
             }
 
             // If this is a dynamic model
+            // Interpolate to new position every second, likely to be deprecated
             const currentTime = performance.now() / 1000; // Get current time in seconds
             if (jsonFiles[currentIndex] == 'obj/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
             {
@@ -273,8 +266,8 @@
         }
 
         // Function to handle loading new JSON data
-        function loadNewJSON() {
-            currentIndex = (currentIndex + 1) % jsonFiles.length;
+        function loadNewJSON(up) {
+            currentIndex = (currentIndex + up) % jsonFiles.length;
             loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
                 .then(data => {
                     scene.remove(lines);
@@ -291,10 +284,18 @@
             .then(updateScene);
 
         // Update the scene on click
-        window.addEventListener('click', loadNewJSON);
+        // window.addEventListener('click', loadNewJSON);
+        window.addEventListener('keydown', function(event)  {
+            if (event.key == 'ArrowRight') {
+                loadNewJSON(1);
+            } else if (event.key == 'ArrowLeft') {
+                loadNewJSON(-1);
+            }
+        });
+        window.addEventListener('ArrowDown', loadNewJSON(-1));
         window.addEventListener('touchstart', (event) => {
             event.preventDefault();
-            loadNewJSON();
+            loadNewJSON(1);
         });
         // window.addEventListener('touchend', (event) => {
         //     event.preventDefault();
