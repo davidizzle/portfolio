@@ -7,12 +7,39 @@
     <style>
         body { margin: 0; }
         canvas { display: block; }
+
+        /* Styling for text elements */
+        #textAbove, #textBelow {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            /* opacity: 0; Start invisible for fade-in */
+            /* transition: opacity 0.5s ease-in-out; Smooth fade-in */
+        }
+
+        #textAbove { top: 10%; }
+        #textBelow { bottom: 10%; }
+
+        /* Hide spans initially */
+        .hidden-word {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out; /* Smooth fade-in */
+        }
     </style>
 </head>
 <body>
+    <div id="textAbove"></div>
+    <div id="textBelow"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
+    <!-- for fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <!-- for fading font -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
     <script>
         // Scene setup
         const scene = new THREE.Scene();
@@ -43,6 +70,52 @@
         let lines; // To hold the lines connecting the spheres
         let faces; // Global variable to store faces data
         let targetPositions = []; // Array to store target positions for the transition
+
+        // Text Variables and functions
+        const fullTextAbove = "This is the text above the model";
+        const fullTextBelow = "This is the text below the model";
+        const textAboveDiv = document.getElementById('textAbove');
+        const textBelowDiv = document.getElementById('textBelow');
+        let currentWordIndexAbove = 0;
+        let currentWordIndexBelow = 0;
+        const wordInterval = 500; // Time interval between words in milliseconds
+        let lastWordTime = 0; // Keeps track of when the last word was added
+        // Function to update text and fade in
+        // function updateText(element, text, currentIndex) {
+        //     const words = text.split(' ');
+        //     if (currentIndex < words.length) {
+        //         // Update the text content to show more words
+        //         element.textContent = words.slice(0, currentIndex + 1).join(' ');
+
+        //         // Set opacity to 0 before showing, then trigger fade-in
+        //         element.style.opacity = 0;
+        //         setTimeout(() => element.style.opacity = 1, 500); // Delay to ensure smooth fade
+
+        //         // Increment the index for the next word
+        //         return currentIndex + 1;
+        //     }
+        //     return currentIndex;
+        // }
+        // Function to set up text with spans for each word
+        function setupText(element, text) {
+            const words = text.split(' ');
+            element.innerHTML = words
+                .map(word => `<span class="hidden-word">${word} </span>`)
+                .join('');
+        }
+        // Function to reveal words by changing opacity
+        function revealWord(element, index) {
+            const wordSpans = element.querySelectorAll('.hidden-word');
+            if (index < wordSpans.length) {
+                wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
+                return index + 1; // Return the next index
+            }
+            return index;
+        }
+        // Set up the text spans for the above and below texts
+        setupText(textAboveDiv, fullTextAbove);
+        setupText(textBelowDiv, fullTextBelow);
+        // End text variables
 
         let currentIndex = 0;  // Track the current JSON index
         const jsonFiles = ['obj/nothing.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antennabase.json'];  // List of JSON files to toggle between
@@ -302,13 +375,46 @@
         //     loadNewJSON();
         // });
 
+        // Update the text sprite content
+        function updateTextSprite(sprite, newText, duration = 100) {
+            const canvas = sprite.material.map.image;
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.fillText(newText, 0, 48); // Adjust the vertical position if needed
+            sprite.material.map.needsUpdate = true;
+
+            // Fade in the sprite's opacity using GSAP
+            gsap.to(sprite.material, { opacity: 1, duration: duration }); // Adjust duration for speed of fade
+
+        }
+
         // Animation loop
-        function animate() {
+        function animate(time) {
             requestAnimationFrame(animate);
+
+            // Make the text always face the camera
+            // if (textAbove) textAbove.lookAt(camera.position);
+            // if (textBelow) textBelow.lookAt(camera.position);   
+
             jiggleSpheres(); // Call the jiggle function
             controls.update();
             renderer.render(scene, camera);
             // console.log(spheres);
+
+            // Word part
+            // Update the text word by word for the above element
+            if (time - lastWordTime > wordInterval) {
+                if (currentWordIndexAbove < fullTextAbove.split(' ').length) {
+                    currentWordIndexAbove = revealWord(textAboveDiv, currentWordIndexAbove);
+                }
+
+                // Update the text word by word for the below element
+                if (currentWordIndexBelow < fullTextBelow.split(' ').length) {
+                    currentWordIndexBelow = revealWord(textBelowDiv, currentWordIndexBelow);
+                }
+
+                lastWordTime = time;
+            }
         }
 
         animate();
