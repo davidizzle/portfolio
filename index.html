@@ -72,30 +72,39 @@
         let targetPositions = []; // Array to store target positions for the transition
 
         // Text Variables and functions
-        const fullTextAbove = "This is the text above the model";
-        const fullTextBelow = "This is the text below the model";
+        const textSets = [
+            { above: "Hi! I'm Davide.", below: "I am an engineer." },
+            { above: "Welcome to my 3D world.", below: "Let's explore the models together." },
+            { above: "Check out the intricate design.", below: "Do you like this crankshaft?" },
+            { above: "Wall Street Bull down here.", below: "Stonks." },
+            { above: "Antennabase is displayed here.", below: "Look how it connects to the top." }
+        ];
         const textAboveDiv = document.getElementById('textAbove');
         const textBelowDiv = document.getElementById('textBelow');
+        let fullTextAbove = textSets[0].above;
+        let fullTextBelow = textSets[0].below;
         let currentWordIndexAbove = 0;
         let currentWordIndexBelow = 0;
-        const wordInterval = 500; // Time interval between words in milliseconds
-        let lastWordTime = 0; // Keeps track of when the last word was added
-        // Function to update text and fade in
-        // function updateText(element, text, currentIndex) {
-        //     const words = text.split(' ');
-        //     if (currentIndex < words.length) {
-        //         // Update the text content to show more words
-        //         element.textContent = words.slice(0, currentIndex + 1).join(' ');
+        const wordInterval = 150; // Time interval between words in milliseconds
+        let lastWordTime = 1000; // Keeps track of when the last word was added
+        // Function to update the text when a new JSON file is loaded
+        function updateTextForIndex(index) {
+            const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
 
-        //         // Set opacity to 0 before showing, then trigger fade-in
-        //         element.style.opacity = 0;
-        //         setTimeout(() => element.style.opacity = 1, 500); // Delay to ensure smooth fade
+            // Reset current word indices
+            currentWordIndexAbove = 0;
+            currentWordIndexBelow = 0;
 
-        //         // Increment the index for the next word
-        //         return currentIndex + 1;
-        //     }
-        //     return currentIndex;
-        // }
+            fullTextAbove = textData.above;
+            fullTextBelow = textData.below;
+
+            // Set up the new text content in the divs
+            setupText(textAboveDiv, fullTextAbove);
+            setupText(textBelowDiv, fullTextBelow);
+            
+            // Start revealing words again
+            lastWordTime = time + 1000; // Reset the timer to allow immediate word revealing
+        }
         // Function to set up text with spans for each word
         function setupText(element, text) {
             const words = text.split(' ');
@@ -361,8 +370,10 @@
         window.addEventListener('keydown', function(event)  {
             if (event.key == 'ArrowRight') {
                 loadNewJSON(1);
+                updateTextForIndex(currentIndex + 1)
             } else if (event.key == 'ArrowLeft') {
                 loadNewJSON(-1);
+                updateTextForIndex(currentIndex )
             }
         });
         window.addEventListener('ArrowDown', loadNewJSON(-1));
@@ -404,13 +415,12 @@
             // Word part
             // Update the text word by word for the above element
             if (time - lastWordTime > wordInterval) {
+                // Update the text word by word for the below element
+                if (currentWordIndexAbove == fullTextAbove.split(' ').length && currentWordIndexBelow < fullTextBelow.split(' ').length) {
+                    currentWordIndexBelow = revealWord(textBelowDiv, currentWordIndexBelow);
+                }
                 if (currentWordIndexAbove < fullTextAbove.split(' ').length) {
                     currentWordIndexAbove = revealWord(textAboveDiv, currentWordIndexAbove);
-                }
-
-                // Update the text word by word for the below element
-                if (currentWordIndexBelow < fullTextBelow.split(' ').length) {
-                    currentWordIndexBelow = revealWord(textBelowDiv, currentWordIndexBelow);
                 }
 
                 lastWordTime = time;
