@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spheres Connected by Lines from JSON</title>
+    <title>DVDZ</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -22,7 +22,7 @@
         }
 
         #textAbove { top: 50%; }
-        #textBelow { top: 47%; }
+        #textBelow { top: 46%; }
 
         /* Hide spans initially */
         .hidden-word {
@@ -96,7 +96,7 @@
 
         // Text Variables and functions
         const textSets = [
-            { above: "This is my project portfolio. Have a look around.", below: "Oh, feel free to navigate with ← and → arrows." },
+            { above: "This is my project portfolio. Have a look around.", below: "Oh! Feel free to navigate with ← and → arrows." },
             { above: "Welcome to my 3D world.", below: "Let's explore the models together." },
             { above: "Check out the intricate design.", below: "Do you like this crankshaft?" },
             { above: "Wall Street Bull down here.", below: "Stonks." },
@@ -105,13 +105,17 @@
         const textAboveDiv = document.getElementById('textAbove');
         const textBelowDiv = document.getElementById('textBelow');
         let fullTextAbove = "Hi! I'm Davide.";
-        let fullTextBelow = "I am an engineer. Of sorts.";
+        let fullTextBelow = "I am a software engineer. Of sorts.";
         let currentWordIndexAbove = 0;
         let currentWordIndexBelow = 0;
         const wordInterval = 150; // Time interval between words in milliseconds
         let lastWordTime = 1000; // Keeps track of when the last word was added
         // Function to update the text when a new JSON file is loaded
         function updateTextForIndex(index) {
+            
+            index = index % textSets.length;
+            index = (index < 0) ? (textSets.length + index) : index;
+
             const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
 
             // Reset current word indices
@@ -153,11 +157,11 @@
         // End text variables
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['obj/nothing.json', 'obj/crankshaft.json', 'obj/bull.json', 'obj/antennabase.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['assets/json/nothing.json', 'assets/json/nothing.json', 'assets/json/crankshaftnew.json', 'assets/json/bullnew.json', 'assets/json/antennabase.json'];  // List of JSON files to toggle between
         
         // This should be deprecated in favor of animations to be honest
         const auxJsonDynamic = {
-            'obj/antennabase.json': ['obj/antennatop1.json', 'obj/antennatop2.json', 'obj/antennatop3.json']
+            'assets/json/antennabase.json': ['assets/json/antennatop1.json', 'assets/json/antennatop2.json', 'assets/json/antennatop3.json']
         }
 
         function loadJSON(url) {
@@ -264,7 +268,7 @@
             
             // If this is a dynamic model
             const randomIndex = Math.floor(Math.random() * 3);
-            if ( jsonFiles[currentIndex] == 'obj/antennabase.json')
+            if ( jsonFiles[currentIndex] == 'assets/json/antennabase.json')
             {
                 // console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
                 await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
@@ -295,7 +299,7 @@
 
         // Slower jiggle effect
         let Time = 0; // Time variable for slow jiggle
-        const timeSpeed = 0.05; // Speed of jiggle
+        const timeSpeed = 1; // Speed of jiggle
         const margin = 1 // To draw lines
         let lastCheckedTime = 0; // Track last time the condition was checked
         function jiggleSpheres() {
@@ -305,10 +309,10 @@
             let activeSpheres = 0;
 
             spheres.forEach((sphere, index) => {
-                const jiggleFactor = 0.005;
-                const offset_x = Math.sin(Time + sphere.seed) * jiggleFactor;
-                const offset_y = Math.sin(Time + sphere.seed * 1.1) * jiggleFactor;
-                const offset_z = Math.sin(Time + sphere.seed * 1.5) * jiggleFactor;
+                const jiggleFactor = 5e-3;
+                const offset_x = Math.sin(Time/10 + sphere.seed) * jiggleFactor;
+                const offset_y = Math.sin(Time/10 + sphere.seed * 1.1) * jiggleFactor;
+                const offset_z = Math.sin(Time/10 + sphere.seed * 1.5) * jiggleFactor;
                 sphere.position.x += offset_x;
                 sphere.position.y += offset_y;
                 sphere.position.z += offset_z;
@@ -322,15 +326,18 @@
                 if (!targetPositions[index]) {
                             // let radius = ( Math.cos(Time * spinSpeed + sphere.seed) + 5) * 10 ; // Radius of the circular motion
                             const spinSpeed = 0.01; // Speed of the spin
-                            sphere.theta = Time * spinSpeed * sphere.seed2 + sphere.seed;
+                            sphere.theta = (Time - 50*Math.sin(Time / 50) ) * spinSpeed ;
                             sphere.phi = Time * spinSpeed  * sphere.seed4 + sphere.seed3;
-                            sphere.radius = 100 + (Math.cos(Time * spinSpeed * 5 + sphere.seed) * sphere.seed2 * 5);
-                            sphere.radius1 = ( Math.cos(Time * spinSpeed * 50 + sphere.seed) * sphere.seed2 + 8) * 10;
+
+                            // 100 is the main sphere radius, + a bit of slow wiggling
+                            // sphere.radius = 100 + (Math.cos(Time * spinSpeed * 5 + sphere.seed) * sphere.seed2 * 5);
+                            sphere.radius = 100;
+                            // sphere.radius1 = ( Math.cos(Time * spinSpeed * 50 + sphere.seed) * sphere.seed2 + 8) * 10;
                             let y_off = 10;
                             let x0, y0, z0;
-                            x0 = Math.cos(sphere.theta) * Math.sin(sphere.phi) * sphere.radius;
-                            z0 = Math.sin(sphere.theta) * Math.sin(sphere.phi) * sphere.radius;
-                            y0 = Math.cos(sphere.phi) * sphere.radius + y_off; // Preserve the original y position
+                            x0 = Math.cos(sphere.phi ) * Math.sin(sphere.theta) * sphere.radius;
+                            z0 = Math.sin(sphere.phi) * Math.sin(sphere.theta) * sphere.radius;
+                            y0 = Math.cos(sphere.theta) * sphere.radius + y_off; // Preserve the original y position
                             // Maintain original y position
                             // sphere.position.y = sphere.position.y; // Preserve the original y position
 
@@ -358,7 +365,7 @@
             // If this is a dynamic model
             // Interpolate to new position every second, likely to be deprecated
             const currentTime = performance.now() / 1000; // Get current time in seconds
-            if (jsonFiles[currentIndex] == 'obj/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
+            if (jsonFiles[currentIndex] == 'assets/json/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
             {
                 lastCheckedTime = currentTime;
                 loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
@@ -376,6 +383,7 @@
         // Function to handle loading new JSON data
         function loadNewJSON(up) {
             currentIndex = (currentIndex + up) % jsonFiles.length;
+            // currentIndex = (currentIndex < 0) ? (jsonFiles.length + currentIndex) : currentIndex;
             loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
                 .then(data => {
                     scene.remove(lines);
@@ -389,7 +397,7 @@
 
         // Load initial JSON file
         // Suggest edit: create big cube (or even tidus) and put it out of sight
-        loadJSON('obj/tiduslat.json') // Replace with your initial JSON file path
+        loadJSON('assets/json/tiduslat.json') // Replace with your initial JSON file path
             .then(updateScene);
 
         // Update the scene on click
@@ -397,7 +405,7 @@
         window.addEventListener('keydown', function(event)  {
             if (event.key == 'ArrowRight') {
                 loadNewJSON(1);
-                updateTextForIndex(currentIndex + 1)
+                updateTextForIndex(currentIndex)
             } else if (event.key == 'ArrowLeft') {
                 loadNewJSON(-1);
                 updateTextForIndex(currentIndex)
@@ -408,10 +416,6 @@
             event.preventDefault();
             loadNewJSON(1);
         });
-        // window.addEventListener('touchend', (event) => {
-        //     event.preventDefault();
-        //     loadNewJSON();
-        // });
 
         // Animation loop
         function animate(time) {
@@ -428,8 +432,8 @@
             if (Math.abs(time - 8e3) < 10)
             {
                 updateTextForIndex(0);
+                loadNewJSON(1);
             }
-
             
             // Word part
             // Update the text word by word for the above element

@@ -1,8 +1,16 @@
 import json
+import argparse
 
-# Path to your bull2.txt file
-input_file_path = 'obj/toparse.txt'  # Adjust path as needed
-output_file_path = 'obj/parsed.json'
+# Set up argument parser
+parser = argparse.ArgumentParser(description='Convert a .txt file of vertices and faces to JSON format.')
+parser.add_argument('--input', type=str, default='obj/toparse.txt', help='Path to the input .txt file (default: obj/toparse.txt)')
+
+# Parse arguments
+args = parser.parse_args()
+
+# Use the input and output file paths from the arguments
+input_file_path = f"assets/obj/{args.input}.obj"
+output_file_path = f"assets/json/{args.input}.json"
 
 # Initialize lists to store vertex positions and face indices
 vertices = []
