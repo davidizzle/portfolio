@@ -325,8 +325,10 @@
                 // If the target position is unchanged, spin around the object
                 if (!targetPositions[index]) {
                             // let radius = ( Math.cos(Time * spinSpeed + sphere.seed) + 5) * 10 ; // Radius of the circular motion
-                            const spinSpeed = 0.01; // Speed of the spin
-                            sphere.theta = (Time - 50*Math.sin(Time / 50) ) * spinSpeed ;
+                            const spinSpeed = 0.03; // Speed of the spin
+                            sphere.theta = (Time - (Math.cos(Time * spinSpeed)^2 -1 )) * spinSpeed;
+                            sphere.theta = (Time + Math.sin(Time) ) * spinSpeed;
+                            sphere.theta = (Time ) * spinSpeed + 0.5 * Math.sin(Time * spinSpeed * 2 + Math.PI * 5 / 12 ) ;
                             sphere.phi = Time * spinSpeed  * sphere.seed4 + sphere.seed3;
 
                             // 100 is the main sphere radius, + a bit of slow wiggling
@@ -341,7 +343,7 @@
                             // Maintain original y position
                             // sphere.position.y = sphere.position.y; // Preserve the original y position
 
-                            sphere.position.lerp(new THREE.Vector3(x0, y0, z0), 0.01);
+                            sphere.position.lerp(new THREE.Vector3(x0, y0, z0), spinSpeed);
                         }
 
                 // Only draw lines within certain margin of desired sphere position

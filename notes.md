@@ -1,3 +1,5 @@
+# General notes on surface geometry
+
 ## Sphere surface
 
 ```Javascript
@@ -11,6 +13,17 @@ I think the way to avoid all spheres passing through the poles here would be to 
 A way to avoid this would be indeed to limit the full swing of the sines and cosines from going all the way to the poles. However, this would result in no sphere traveling through the poles at all.
 
 As a result, we might limit the amplitude span of the sinusoids and then randomly move the spheres so that their journeys cover "patches" of the overall spheres and, in aggregate, they seem to be moving more randomly.
+
+### Rings accelerating and slowing down
+
+As we inferred, we were investigating the right track. Using this code:
+
+```JavaScript
+sphere.theta = (Time ) * spinSpeed + 0.5 * Math.sin(Time * spinSpeed * 2 + Math.PI * 5 / 12 ) ;
+sphere.phi = Time * spinSpeed  * sphere.seed4 + sphere.seed3;
+```
+
+We managed to have a ring of spheres accelerating in the middle and slowing down at the poles.
 
 ## Odd shapes
 
