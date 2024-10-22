@@ -64,6 +64,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     
     <script>
+        // Create a new audio element
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.controls = true; // Add controls (optional)
+        audioPlayer.src = 'https://github.com/davidizzle/portfolio/blob/globules/audio.aif'; // Path to your .aif file hosted on your server
+        audioPlayer.type = 'audio/mp4'; // Set the type for AIFF files
+        // Automatically play the audio when the page loads
+        audioPlayer.autoplay = true;
+        // Append the audio player to the body or another container
+        document.body.appendChild(audioPlayer);
+        // Handle any errors in case the file cannot be played
+        audioPlayer.addEventListener('error', (e) => {
+            console.error('Error loading or playing the audio file:', e);
+        });
+
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
