@@ -62,21 +62,12 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
     <!-- for fading font -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
+    <audio id="audioPlayer" controls style="display: none;">
+        <source src="audio.mp3" type="audio/mpeg">
+        Sorry, no Audio support.
+    </audio>
+
     <script>
-        // Create a new audio element
-        const audioPlayer = document.createElement('audio');
-        audioPlayer.controls = true; // Add controls (optional)
-        audioPlayer.src = 'https://github.com/davidizzle/portfolio/blob/globules/audio.mp4'; // Path to your .aif file hosted on your server
-        audioPlayer.type = 'audio/mp4'; // Set the type for AIFF files
-        // Automatically play the audio when the page loads
-        audioPlayer.autoplay = true;
-        // Append the audio player to the body or another container
-        document.body.appendChild(audioPlayer);
-        // Handle any errors in case the file cannot be played
-        audioPlayer.addEventListener('error', (e) => {
-            console.error('Error loading or playing the audio file:', e);
-        });
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -323,7 +314,7 @@
             let activeSpheres = 0;
 
             spheres.forEach((sphere, index) => {
-                const jiggleFactor = 5e-3;
+                const jiggleFactor = 1e-2;
                 const offset_x = Math.sin(Time/10 + sphere.seed) * jiggleFactor;
                 const offset_y = Math.sin(Time/10 + sphere.seed * 1.1) * jiggleFactor;
                 const offset_z = Math.sin(Time/10 + sphere.seed * 1.5) * jiggleFactor;
@@ -426,6 +417,12 @@
                 loadNewJSON(-1);
                 updateTextForIndex(currentIndex)
             }
+            const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.muted = false; // Unmute in case it was muted
+                audioPlayer.loop = true; // Enable looping
+                audioPlayer.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                });
         });
         window.addEventListener('ArrowDown', loadNewJSON(-1));
         window.addEventListener('touchstart', (event) => {
