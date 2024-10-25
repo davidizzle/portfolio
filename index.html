@@ -49,12 +49,33 @@
         #myButton:hover {
             opacity: 1;
         }
+
+            .description {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20%;
+        }
+
+        #left-description {
+            left: 5%;
+            text-align: left;
+        }
+
+        #right-description {
+            right: 5%;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
     <div id="textAbove"></div>
     <div id="textBelow"></div>
-    <button id="myButton">Get to know me.</button>
+    <div id="left-description" class="description"></div>
+    <div id="right-description" class="description"></div>
+    <a href="https://davidizzle.github.io/chatbot-own">
+        <button id="myButton">Get to know me.</button>
+    </a>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <!-- for fonts -->
@@ -106,6 +127,25 @@
             { above: "Check out the intricate design.", below: "Do you like this crankshaft?" },
             { above: "Wall Street Bull down here.", below: "Stonks." },
             { above: "Antennabase is displayed here.", below: "Look how it connects to the top." }
+        ];
+        const modelDescriptions = [
+            {
+                left: "Model 1 Description: This is a detailed description of Model 1.",
+                right: "Learn more about Model 1 [here](https://example.com/model1)."
+            },
+            {
+                left: "Model 2 Description: This model is great for text generation tasks.",
+                right: "Find the documentation [here](https://example.com/model2)."
+            },
+            {
+                left: "Model 3 Description: This model excels at chat-based interactions.",
+                right: "Check the details [here](https://example.com/model3)."
+            },
+            {
+                left: "Model 3 Description: This model excels at chat-based interactions.",
+                right: "Check the details [here](https://example.com/model3)."
+            }
+            // Add descriptions for other models as needed
         ];
         const textAboveDiv = document.getElementById('textAbove');
         const textBelowDiv = document.getElementById('textBelow');
@@ -162,12 +202,12 @@
         // End text variables
 
         let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['assets/json/nothing.json', 'assets/json/nothing.json', 'assets/json/crankshaftnew.json', 'assets/json/bullnew.json', 'assets/json/antennabase.json'];  // List of JSON files to toggle between
+        const jsonFiles = ['assets/json/nothing.json', 'assets/json/daggerComp4.json', 'assets/json/crankshaftnew.json', 'assets/json/bullnew.json', 'assets/json/antenna.json'];  // List of JSON files to toggle between
         
         // This should be deprecated in favor of animations to be honest
-        const auxJsonDynamic = {
-            'assets/json/antennabase.json': ['assets/json/antennatop1.json', 'assets/json/antennatop2.json', 'assets/json/antennatop3.json']
-        }
+        // const auxJsonDynamic = {
+        //     'assets/json/antennabase.json': ['assets/json/antennatop1.json', 'assets/json/antennatop2.json', 'assets/json/antennatop3.json']
+        // }
 
         function loadJSON(url) {
             return fetch(url)
@@ -272,20 +312,20 @@
         async function transitionToNewPositions(newVertices) {
             
             // If this is a dynamic model
-            const randomIndex = Math.floor(Math.random() * 3);
-            if ( jsonFiles[currentIndex] == 'assets/json/antennabase.json')
-            {
-                // console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
-                await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
-                    .then( data => {
-                        const initialVertexCount = newVertices.length;
-                        newVertices.push(...data.vertices);
-                        const newFaces = data.faces.map(face => 
-                            face.map(index => (index + initialVertexCount / 3) % newVertices.length) // Adjust indices
-                        );
-                        faces.push(...newFaces);
-                    });
-            }
+            // const randomIndex = Math.floor(Math.random() * 3);
+            // if ( jsonFiles[currentIndex] == 'assets/json/antennabase.json')
+            // {
+            //     // console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
+            //     await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
+            //         .then( data => {
+            //             const initialVertexCount = newVertices.length;
+            //             newVertices.push(...data.vertices);
+            //             const newFaces = data.faces.map(face => 
+            //                 face.map(index => (index + initialVertexCount / 3) % newVertices.length) // Adjust indices
+            //             );
+            //             faces.push(...newFaces);
+            //         });
+            // }
 
             const newTargetPositions = [];
 
@@ -372,19 +412,19 @@
             // If this is a dynamic model
             // Interpolate to new position every second, likely to be deprecated
             const currentTime = performance.now() / 1000; // Get current time in seconds
-            if (jsonFiles[currentIndex] == 'assets/json/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
-            {
-                lastCheckedTime = currentTime;
-                loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
-                .then(data => {
-                    // scene.remove(lines);
-                    // lines.geometry.dispose(); // Dispose the geometry to free memory
-                    // lines.material.dispose(); // Dispose the material to free memory
-                    // lines = null; // Set lines to null after removal
-                    faces = data.faces;
-                    transitionToNewPositions(data.vertices);
-                });
-            }
+            // if (jsonFiles[currentIndex] == 'assets/json/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
+            // {
+            //     lastCheckedTime = currentTime;
+            //     loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
+            //     .then(data => {
+            //         // scene.remove(lines);
+            //         // lines.geometry.dispose(); // Dispose the geometry to free memory
+            //         // lines.material.dispose(); // Dispose the material to free memory
+            //         // lines = null; // Set lines to null after removal
+            //         faces = data.faces;
+            //         transitionToNewPositions(data.vertices);
+            //     });
+            // }
         }
 
         // Function to handle loading new JSON data
