@@ -90,6 +90,34 @@
 
     <script>
 
+        // Scene setup (add this before the animate function)
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let intersectedObject = null;
+        let modelMesh; // A mesh that represents the entire model's geometry
+
+        // Function to update the mouse position
+        function onMouseMove(event) {
+            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        // Function to handle object click
+        let lastClick = 0;
+        function onObjectClick() {
+            // Only on double click
+            if (intersectedObject && (performance.now() - lastClick) < 200 ) {
+                const link = modelLinks[currentIndex];
+                if (link) {
+                    window.open(link, '_blank');
+                }
+            }
+            lastClick = performance.now();
+        }
+                
+
+
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -122,12 +150,20 @@
 
         // Text Variables and functions
         const textSets = [
-            { above: "This is my project portfolio. Have a look around.", below: "Oh! Feel free to navigate with ← and → arrows." },
-            { above: "Welcome to my 3D world.", below: "Let's explore the models together." },
-            { above: "Check out the intricate design.", below: "Do you like this crankshaft?" },
-            { above: "Wall Street Bull down here.", below: "Stonks." },
-            { above: "Antennabase is displayed here.", below: "Look how it connects to the top." }
+            { above: "This is my personal website. Have a look around.", below: "Oh! Feel free to navigate with ← and → arrows." },
+            { above: "Here, I keep a collection of my favorite projects.", below: "Let's explore some together!" },
+            { above: "Under construction...", below: "Wow, such empty..." },
+            { above: "Under construction...", below: "Wow, such empty..." },
+            { above: "Under construction...", below: "Wow, such empty..." }
         ];
+        // Array of URLs corresponding to each model
+            const modelLinks = [
+                'https://blank.page/',
+                'https://github.com/davidizzle/GSoC-Dagger.jl-Blog',
+                'https://blank.page/',
+                'https://blank.page/',
+                'https://blank.page/'
+            ];
         const modelDescriptions = [
             {
                 left: "Model 1 Description: This is a detailed description of Model 1.",
@@ -218,8 +254,13 @@
         function updateScene(data) {
             // Clear existing spheres and lines
             spheres.forEach(sphere => scene.remove(sphere));
-            if (lines) {
+            if (lines) 
+            {
                 scene.remove(lines);
+            }
+            if (modelMesh)
+            {
+                scene.remove(modelMesh);
             }
 
             spheres = []; // Reset spheres array
@@ -231,6 +272,41 @@
                 console.error("Faces data is not in expected array format:", faces);
                 return; // Exit if faces are not iterable
             }
+
+            // Create virtual mesh for link clicking purposes
+            // Create a new buffer geometry for the model
+            const geometry = new THREE.BufferGeometry();
+
+            // Convert vertices array into a Float32Array and add to the geometry
+            const positions = new Float32Array(vertices);
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            // Create an index array for faces
+            const indices = [];
+            faces.forEach(face => {
+                if (face.length === 3) {
+                    // Add indices for a triangle (three vertices)
+                    indices.push(face[0], face[1], face[2]);
+                } else if (face.length === 4) {
+                    // For quads, split into two triangles
+                    indices.push(face[0], face[1], face[2]);
+                    indices.push(face[2], face[3], face[0]);
+                }
+            });
+
+            // Set the index for the geometry to use the faces
+            geometry.setIndex(indices);
+
+            // Create a material for the model
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x6dd8fc,
+                side: THREE.DoubleSide, // Render both sides of faces
+                flatShading: true
+            });
+
+            // Create the mesh and add it to the scene
+            modelMesh = new THREE.Mesh(geometry, material);
+            scene.add(modelMesh);
 
             // Create spheres for each vertex position
             for (let i = 0; i < vertices.length; i += 3) {
@@ -309,8 +385,8 @@
             scene.add(lines);
         }
         
-        async function transitionToNewPositions(newVertices) {
-            
+        function transitionToNewPositions(newVertices) {
+            scene.remove(modelMesh);
             // If this is a dynamic model
             // const randomIndex = Math.floor(Math.random() * 3);
             // if ( jsonFiles[currentIndex] == 'assets/json/antennabase.json')
@@ -338,8 +414,45 @@
                 // Set the target position for each sphere
                 newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
             }
-
+            console.log("hello pos");
             targetPositions = newTargetPositions; // Update the target positions
+
+            // Create a new buffer geometry for the model
+            // console.log(vertices)
+            const geometry = new THREE.BufferGeometry();
+            // Convert vertices array into a Float32Array and add to the geometry
+            const positions = new Float32Array(newVertices);
+            console.log("hello pos2");
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            // Create an index array for faces
+            const indices = [];
+            faces.forEach(face => {
+                if (face.length === 3) {
+                    // Add indices for a triangle (three vertices)
+                    indices.push(face[0], face[1], face[2]);
+                } else if (face.length === 4) {
+                    // For quads, split into two triangles
+                    indices.push(face[0], face[1], face[2]);
+                    indices.push(face[2], face[3], face[0]);
+                }
+            });
+
+            // Set the index for the geometry to use the faces
+            geometry.setIndex(indices);
+
+            // Create a material for the model
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x6dd8fc,
+                transparent: true, // Allow transparency
+                opacity: 0, // Make the mesh invisible
+                depthWrite: false, // Enable to true for cool dynamic mesh effect
+                flatShading: true
+            });
+
+            // Create the mesh and add it to the scene
+            modelMesh = new THREE.Mesh(geometry, material);
+            scene.add(modelMesh);
         }
 
         // Slower jiggle effect
@@ -470,9 +583,57 @@
             loadNewJSON(1);
         });
 
+        // Add event listener for mouse movement
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('click', onObjectClick);
+
         // Animation loop
+        const colorTransition = { r: 0.427, g: 0.847, b: 0.988 }; // Start with the original blue color
         function animate(time) {
             requestAnimationFrame(animate);
+
+            // Begin link
+            // Perform raycasting with the model mesh
+            if (true) {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(modelMesh);
+
+                if (intersects.length > 0) {
+                        gsap.to(colorTransition, {
+                        r: 1,
+                        g: 0,
+                        b: 0,
+                        duration: 3.0,
+                        ease: "power2.out",
+                        onUpdate: () => {
+                            // Apply the interpolated color to each sphere
+                            spheres.forEach(sphere => {
+                                sphere.material.color.setRGB(colorTransition.r, colorTransition.g, colorTransition.b);
+                            });
+                        }
+                    });
+                document.body.style.cursor = 'pointer';
+                intersectedObject = 1;
+                } else {
+                    gsap.to(colorTransition, {
+                        r: 0.427,
+                        g: 0.847,
+                        b: 0.988,
+                        duration: 0.3,
+                        ease: "power2.out",
+                        onUpdate: () => {
+                            // Apply the interpolated color to each sphere
+                            spheres.forEach(sphere => {
+                                sphere.material.color.setRGB(colorTransition.r, colorTransition.g, colorTransition.b);
+                            });
+                        }
+                    });
+                    document.body.style.cursor = 'default';
+                    intersectedObject = null;
+                }
+            }
+            // End link
+
 
             jiggleSpheres(); // Call the jiggle function
             controls.update();
