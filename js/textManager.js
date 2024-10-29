@@ -1,37 +1,41 @@
-// Function to set up text with spans for each word
-export function setupText(element, text) {
-    const words = text.split(' ');
-    element.innerHTML = words
-        .map(word => `<span class="hidden-word">${word} </span>`)
-        .join('');
-}
-
-// Function to reveal words by changing opacity
-export function revealWord(element, index) {
-    const wordSpans = element.querySelectorAll('.hidden-word');
-    if (index < wordSpans.length) {
-        wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
-        return index + 1; // Return the next index
+class TextManager {
+    constructor() {
+        this.textAboveDiv = document.getElementById('textAbove');
+        this.textBelowDiv = document.getElementById('textBelow');
+        this.textSets = [
+            { above: "This is my personal website. Have a look around.", below: "Oh! Feel free to navigate with ← and → arrows." },
+            { above: "Here, I keep a collection of my favorite projects.", below: "Let's explore some together!" },
+            { above: "Under construction...", below: "Wow, such empty..." },
+            { above: "Under construction...", below: "Wow, such empty..." },
+            { above: "Under construction...", below: "Wow, such empty..." }
+        ];
     }
-    return index;
+
+    updateTextForIndex(index) {
+        index = index % this.textSets.length;
+        index = (index < 0) ? (this.textSets.length + index) : index;
+
+        const textData = this.textSets[index % this.textSets.length]; // Use modulo to loop over text sets
+        
+        // Reset current word indices
+        let currentWordIndexAbove = 0;
+        let currentWordIndexBelow = 0;
+
+        // Set up the new text content in the divs
+        this.setupText(this.textAboveDiv, textData.above);
+        this.setupText(this.textBelowDiv, textData.below);
+    }
+
+    setupText(element, text) {
+        const words = text.split(' ');
+        element.innerHTML = words
+            .map(word  => `<span class="hidden-word">${word} </span>`)
+            .join('');
+    }
+
+    revealWord(element, index) {
+
+    }
+    
 }
-
-// Function to update the text when a new JSON file is loaded
-export function updateTextForIndex(index) {
-            
-    index = index % textSets.length;
-    index = (index < 0) ? (textSets.length + index) : index;
-
-    const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
-
-    // Reset current word indices
-    currentWordIndexAbove = 0;
-    currentWordIndexBelow = 0;
-
-    fullTextAbove = textData.above;
-    fullTextBelow = textData.below;
-
-    // Set up the new text content in the divs
-    setupText(textAboveDiv, fullTextAbove);
-    setupText(textBelowDiv, fullTextBelow);
-}
+export default TextManager;

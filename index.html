@@ -88,64 +88,18 @@
         Sorry, no Audio support.
     </audio>
 
-    <script>
-
-        // Scene setup (add this before the animate function)
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let intersectedObject = null;
-        let modelMesh; // A mesh that represents the entire model's geometry
-
-        // Function to update the mouse position
-        function onMouseMove(event) {
-            // Calculate mouse position in normalized device coordinates (-1 to +1)
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        // Function to handle object click
-        let lastClick = 0;
-        function onObjectClick() {
-            // Only on double click
-            if (intersectedObject && (performance.now() - lastClick) < 200 ) {
-                const link = modelLinks[currentIndex];
-                if (link) {
-                    window.open(link, '_blank');
-                }
-            }
-            lastClick = performance.now();
-        }
+    <script type="module">
+        import SceneManager from './js/SceneManager.js';
+        import RaycasterManager from './js/RaycasterManager.js';
+        import ModelLoader from './js/ModelLoader.js';
+        import TextManager from './js/TextManager.js';
                 
+        // Scene setup, from SceneManager.js
+        const sceneManager  = new SceneManager();
+        const modelLoader   = new ModelLoader(sceneManager.scene);
+        const raycaster     = new RaycasterManager(sceneManager, modelLoader);
+        const textManager   = new TextManager();
 
-
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(30, 70, 100);
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Orbit Controls to navigate the scene
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        
-        // Light for the scene
-        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Soft white light
-        scene.add(ambientLight);
-        
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(1, 1, 1).normalize();
-        scene.add(light);
-
-        // Sphere geometry and material for the vertices
-        const sphereGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-        const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0x6dd8fc });
-
-        let spheres = [];
-        let lines; // To hold the lines connecting the spheres
-        let faces; // Global variable to store faces data
         let targetPositions = []; // Array to store target positions for the transition
 
         // Text Variables and functions
@@ -183,8 +137,8 @@
             }
             // Add descriptions for other models as needed
         ];
-        const textAboveDiv = document.getElementById('textAbove');
-        const textBelowDiv = document.getElementById('textBelow');
+        // const textAboveDiv = document.getElementById('textAbove');
+        // const textBelowDiv = document.getElementById('textBelow');
         let fullTextAbove = "Hi! I'm Davide.";
         let fullTextBelow = "I am a software engineer. Of sorts.";
         let currentWordIndexAbove = 0;
@@ -192,32 +146,32 @@
         const wordInterval = 150; // Time interval between words in milliseconds
         let lastWordTime = 1000; // Keeps track of when the last word was added
         // Function to update the text when a new JSON file is loaded
-        function updateTextForIndex(index) {
+        // function updateTextForIndex(index) {
             
-            index = index % textSets.length;
-            index = (index < 0) ? (textSets.length + index) : index;
+        //     index = index % textSets.length;
+        //     index = (index < 0) ? (textSets.length + index) : index;
 
-            const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
+        //     const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
 
-            // Reset current word indices
-            currentWordIndexAbove = 0;
-            currentWordIndexBelow = 0;
+        //     // Reset current word indices
+        //     currentWordIndexAbove = 0;
+        //     currentWordIndexBelow = 0;
 
-            fullTextAbove = textData.above;
-            fullTextBelow = textData.below;
+        //     fullTextAbove = textData.above;
+        //     fullTextBelow = textData.below;
 
-            // Set up the new text content in the divs
-            setupText(textAboveDiv, fullTextAbove);
-            setupText(textBelowDiv, fullTextBelow);
+        //     // Set up the new text content in the divs
+        //     setupText(textAboveDiv, fullTextAbove);
+        //     setupText(textBelowDiv, fullTextBelow);
         
-        }
-        // Function to set up text with spans for each word
-        function setupText(element, text) {
-            const words = text.split(' ');
-            element.innerHTML = words
-                .map(word => `<span class="hidden-word">${word} </span>`)
-                .join('');
-        }
+        // }
+        // // Function to set up text with spans for each word
+        // function setupText(element, text) {
+        //     const words = text.split(' ');
+        //     element.innerHTML = words
+        //         .map(word => `<span class="hidden-word">${word} </span>`)
+        //         .join('');
+        // }
         // Function to reveal words by changing opacity
         function revealWord(element, index) {
             const wordSpans = element.querySelectorAll('.hidden-word');
@@ -228,181 +182,21 @@
             return index;
         }
         // Set up the text spans for the above and below texts
-        setupText(textAboveDiv, fullTextAbove);
-        setupText(textBelowDiv, fullTextBelow);
+        textManager.setupText(textManager.textBelowDiv, fullTextBelow);
+        textManager.setupText(textManager.textAboveDiv, fullTextAbove);
         // for words to move up and down
         setTimeout(() => {
-            textAboveDiv.style.top = '5%'; // Move textAbove upwards
-            textBelowDiv.style.top = '90%'; // Move textBelow downwards
+            textManager.textAboveDiv.style.top = '5%'; // Move textAbove upwards
+            textManager.textBelowDiv.style.top = '90%'; // Move textBelow downwards
         }, 5000); // 5000 milliseconds = 5 seconds
         // End text variables
 
         let currentIndex = 0;  // Track the current JSON index
         const jsonFiles = ['assets/json/nothing.json', 'assets/json/daggerComp4.json', 'assets/json/crankshaftnew.json', 'assets/json/bullnew.json', 'assets/json/antenna.json'];  // List of JSON files to toggle between
-        
-        // This should be deprecated in favor of animations to be honest
-        // const auxJsonDynamic = {
-        //     'assets/json/antennabase.json': ['assets/json/antennatop1.json', 'assets/json/antennatop2.json', 'assets/json/antennatop3.json']
-        // }
-
-        function loadJSON(url) {
-            return fetch(url)
-                .then(response => response.json())
-                .catch(error => console.error('Error loading JSON:', error));
-        }
-
-        function updateScene(data) {
-            // Clear existing spheres and lines
-            spheres.forEach(sphere => scene.remove(sphere));
-            if (lines) 
-            {
-                scene.remove(lines);
-            }
-            if (modelMesh)
-            {
-                scene.remove(modelMesh);
-            }
-
-            spheres = []; // Reset spheres array
-            const vertices = data.vertices;
-            faces = data.faces; // Store faces data globally
-
-            // Ensure faces is defined and iterable
-            if (!Array.isArray(faces)) {
-                console.error("Faces data is not in expected array format:", faces);
-                return; // Exit if faces are not iterable
-            }
-
-            // Create virtual mesh for link clicking purposes
-            // Create a new buffer geometry for the model
-            const geometry = new THREE.BufferGeometry();
-
-            // Convert vertices array into a Float32Array and add to the geometry
-            const positions = new Float32Array(vertices);
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-            // Create an index array for faces
-            const indices = [];
-            faces.forEach(face => {
-                if (face.length === 3) {
-                    // Add indices for a triangle (three vertices)
-                    indices.push(face[0], face[1], face[2]);
-                } else if (face.length === 4) {
-                    // For quads, split into two triangles
-                    indices.push(face[0], face[1], face[2]);
-                    indices.push(face[2], face[3], face[0]);
-                }
-            });
-
-            // Set the index for the geometry to use the faces
-            geometry.setIndex(indices);
-
-            // Create a material for the model
-            const material = new THREE.MeshPhongMaterial({
-                color: 0x6dd8fc,
-                side: THREE.DoubleSide, // Render both sides of faces
-                flatShading: true
-            });
-
-            // Create the mesh and add it to the scene
-            modelMesh = new THREE.Mesh(geometry, material);
-            scene.add(modelMesh);
-
-            // Create spheres for each vertex position
-            for (let i = 0; i < vertices.length; i += 3) {
-                const x = vertices[i];
-                const y = vertices[i + 1];
-                const z = vertices[i + 2];
-
-                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                sphere.position.set(x, y, z);
-                 // Unique seeds for each sphere for jiggle effect
-                sphere.seed = Math.random() * 2 * Math.PI;
-                sphere.seed2 = Math.random();
-                sphere.seed3 = Math.random() * 2 * Math.PI;
-                sphere.seed4 = Math.random();
-                scene.add(sphere);
-                spheres.push(sphere);
-
-                // Initialize target positions with the current positions
-                targetPositions.push(sphere.position.clone());
-            }
-
-            // Initialize line material and create lines based on faces
-            updateLines(0.08); // Create initial lines based on faces
-        }
-
-        function updateLines(opac) {
-
-            if (lines) {
-                scene.remove(lines);
-                lines.geometry.dispose(); // Dispose the geometry to free memory
-                lines.material.dispose(); // Dispose the material to free memory
-                lines = null; // Set lines to null after removal
-            }
-
-
-            const lineGeometry = new THREE.BufferGeometry();
-            const lineVertices = [];
-
-            // Loop through each face
-            for (const face of faces) {
-                for (let j = 0; j < face.length; j++) {
-                    const startIndex = face[j]; // Get vertex index for the start of the line
-                    const endIndex = face[(j + 1) % face.length]; // Wrap around to connect the last vertex to the first
-                    
-                    // Ensure startIndex and endIndex are valid
-                    if (startIndex < spheres.length && endIndex < spheres.length) {
-                        const startPos = spheres[startIndex].position;
-                        const endPos = spheres[endIndex].position;
-
-                        // Push vertex positions to the line vertices array
-                        lineVertices.push(startPos.x, startPos.y, startPos.z, endPos.x, endPos.y, endPos.z);
-
-                    } 
-                }
-            }
-            // Map the average line length to an opacity value (adjust this mapping as needed)
-            // This is to provide that initial brightness boost
-            const minOpacity = 0; // Minimum opacity for very short lines
-            const maxOpacity = 1; // Maximum opacity for very long lines
-            const opacity = Math.min(maxOpacity, Math.max(minOpacity, opac));
-
-
-            // Set the vertices to the line geometry
-            lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
-            
-            // Create line material with transparency and opacity
-            const lineMaterial = new THREE.LineBasicMaterial({ 
-                color: 0xffffff, 
-                transparent: true, // Enable transparency
-                // opacity: 0.08 // Set opacity (0 = transparent, 1 = opaque)
-                opacity: opacity // Set opacity (0 = transparent, 1 = opaque)
-            });
-            lineMaterial.depthWrite = false;
-            
-            lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-            scene.add(lines);
-        }
-        
+                
         function transitionToNewPositions(newVertices) {
-            scene.remove(modelMesh);
-            // If this is a dynamic model
-            // const randomIndex = Math.floor(Math.random() * 3);
-            // if ( jsonFiles[currentIndex] == 'assets/json/antennabase.json')
-            // {
-            //     // console.log(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex])
-            //     await loadJSON(auxJsonDynamic[jsonFiles[currentIndex]][randomIndex]) // Replace with the path to your new JSON file
-            //         .then( data => {
-            //             const initialVertexCount = newVertices.length;
-            //             newVertices.push(...data.vertices);
-            //             const newFaces = data.faces.map(face => 
-            //                 face.map(index => (index + initialVertexCount / 3) % newVertices.length) // Adjust indices
-            //             );
-            //             faces.push(...newFaces);
-            //         });
-            // }
 
+            sceneManager.scene.remove(modelLoader.modelMesh);
             const newTargetPositions = [];
 
             // Update target positions based on new vertex data
@@ -414,20 +208,17 @@
                 // Set the target position for each sphere
                 newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
             }
-            console.log("hello pos");
-            targetPositions = newTargetPositions; // Update the target positions
+            modelLoader.targetPositions = newTargetPositions; // Update the target positions
 
             // Create a new buffer geometry for the model
-            // console.log(vertices)
             const geometry = new THREE.BufferGeometry();
             // Convert vertices array into a Float32Array and add to the geometry
             const positions = new Float32Array(newVertices);
-            console.log("hello pos2");
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             
             // Create an index array for faces
             const indices = [];
-            faces.forEach(face => {
+            modelLoader.faces.forEach(face => {
                 if (face.length === 3) {
                     // Add indices for a triangle (three vertices)
                     indices.push(face[0], face[1], face[2]);
@@ -451,8 +242,8 @@
             });
 
             // Create the mesh and add it to the scene
-            modelMesh = new THREE.Mesh(geometry, material);
-            scene.add(modelMesh);
+            modelLoader.modelMesh = new THREE.Mesh(geometry, material);
+            sceneManager.scene.add(modelLoader.modelMesh);
         }
 
         // Slower jiggle effect
@@ -462,11 +253,13 @@
         let lastCheckedTime = 0; // Track last time the condition was checked
         function jiggleSpheres() {
 
+            let spheres = modelLoader.spheres;
+
             let allArrived = true; // Flag to check if all spheres have arrived
             let marginTotal = 0;
             let activeSpheres = 0;
 
-            spheres.forEach((sphere, index) => {
+            modelLoader.spheres.forEach((sphere, index) => {
                 const jiggleFactor = 1e-2;
                 const offset_x = Math.sin(Time/10 + sphere.seed) * jiggleFactor;
                 const offset_y = Math.sin(Time/10 + sphere.seed * 1.1) * jiggleFactor;
@@ -476,12 +269,12 @@
                 sphere.position.z += offset_z;
 
                 // Interpolate positions towards target
-                if (targetPositions[index]) {
-                    sphere.position.lerp(targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
+                if (modelLoader.targetPositions[index]) {
+                    sphere.position.lerp(modelLoader.targetPositions[index], 0.05); // Adjust the factor (0.05) for speed of transition
                 }
 
                 // If the target position is unchanged, spin around the object
-                if (!targetPositions[index]) {
+                if (!modelLoader.targetPositions[index]) {
                             // let radius = ( Math.cos(Time * spinSpeed + sphere.seed) + 5) * 10 ; // Radius of the circular motion
                             const spinSpeed = 0.03; // Speed of the spin
                             sphere.theta = (Time - (Math.cos(Time * spinSpeed)^2 -1 )) * spinSpeed;
@@ -505,8 +298,8 @@
                         }
 
                 // Only draw lines within certain margin of desired sphere position
-                if(targetPositions[index]) {
-                    const distance = sphere.position.distanceTo(targetPositions[index]);
+                if(modelLoader.targetPositions[index]) {
+                    const distance = sphere.position.distanceTo(modelLoader.targetPositions[index]);
                     if (distance > margin) {
                         allArrived = false; // If any sphere has not arrived, set the flag to false
                     }
@@ -519,56 +312,41 @@
             
             // Update lines after jiggling the spheres
             if (allArrived) {
-                updateLines(marginTotal / activeSpheres ); // Use the global faces variable
+                modelLoader.createLines(marginTotal / activeSpheres); // Use the global faces variable
             }
 
-            // If this is a dynamic model
-            // Interpolate to new position every second, likely to be deprecated
             const currentTime = performance.now() / 1000; // Get current time in seconds
-            // if (jsonFiles[currentIndex] == 'assets/json/antennabase.json' && (currentTime - lastCheckedTime) >= 2)
-            // {
-            //     lastCheckedTime = currentTime;
-            //     loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
-            //     .then(data => {
-            //         // scene.remove(lines);
-            //         // lines.geometry.dispose(); // Dispose the geometry to free memory
-            //         // lines.material.dispose(); // Dispose the material to free memory
-            //         // lines = null; // Set lines to null after removal
-            //         faces = data.faces;
-            //         transitionToNewPositions(data.vertices);
-            //     });
-            // }
         }
 
         // Function to handle loading new JSON data
         function loadNewJSON(up) {
             currentIndex = (currentIndex + up) % jsonFiles.length;
             // currentIndex = (currentIndex < 0) ? (jsonFiles.length + currentIndex) : currentIndex;
-            loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
+            modelLoader.loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
                 .then(data => {
-                    scene.remove(lines);
-                    lines.geometry.dispose(); // Dispose the geometry to free memory
-                    lines.material.dispose(); // Dispose the material to free memory
-                    lines = null; // Set lines to null after removal
-                    faces = data.faces;
+                    sceneManager.scene.remove(modelLoader.lines);
+                    modelLoader.lines.geometry.dispose(); // Dispose the geometry to free memory
+                    modelLoader.lines.material.dispose(); // Dispose the material to free memory
+                    modelLoader.lines = null; // Set lines to null after removal
+                    modelLoader.faces = data.faces;
                     transitionToNewPositions(data.vertices);
                 });
         }
 
         // Load initial JSON file
         // Suggest edit: create big cube (or even tidus) and put it out of sight
-        loadJSON('assets/json/tiduslat.json') // Replace with your initial JSON file path
-            .then(updateScene);
+        modelLoader.loadJSON('assets/json/tiduslat.json') // Replace with your initial JSON file path
+            .then(data => modelLoader.updateScene(data));
 
         // Update the scene on click
         // window.addEventListener('click', loadNewJSON);
         window.addEventListener('keydown', function(event)  {
             if (event.key == 'ArrowRight') {
                 loadNewJSON(1);
-                updateTextForIndex(currentIndex)
+                textManager.updateTextForIndex(currentIndex)
             } else if (event.key == 'ArrowLeft') {
                 loadNewJSON(-1);
-                updateTextForIndex(currentIndex)
+                textManager.updateTextForIndex(currentIndex)
             }
             const audioPlayer = document.getElementById('audioPlayer');
                 audioPlayer.muted = false; // Unmute in case it was muted
@@ -583,61 +361,15 @@
             loadNewJSON(1);
         });
 
-        // Add event listener for mouse movement
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('click', onObjectClick);
-
         // Animation loop
-        const colorTransition = { r: 0.427, g: 0.847, b: 0.988 }; // Start with the original blue color
         function animate(time) {
             requestAnimationFrame(animate);
 
-            // Begin link
-            // Perform raycasting with the model mesh
-            if (true) {
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObject(modelMesh);
-
-                if (intersects.length > 0) {
-                        gsap.to(colorTransition, {
-                        r: 1,
-                        g: 0,
-                        b: 0,
-                        duration: 3.0,
-                        ease: "power2.out",
-                        onUpdate: () => {
-                            // Apply the interpolated color to each sphere
-                            spheres.forEach(sphere => {
-                                sphere.material.color.setRGB(colorTransition.r, colorTransition.g, colorTransition.b);
-                            });
-                        }
-                    });
-                document.body.style.cursor = 'pointer';
-                intersectedObject = 1;
-                } else {
-                    gsap.to(colorTransition, {
-                        r: 0.427,
-                        g: 0.847,
-                        b: 0.988,
-                        duration: 0.3,
-                        ease: "power2.out",
-                        onUpdate: () => {
-                            // Apply the interpolated color to each sphere
-                            spheres.forEach(sphere => {
-                                sphere.material.color.setRGB(colorTransition.r, colorTransition.g, colorTransition.b);
-                            });
-                        }
-                    });
-                    document.body.style.cursor = 'default';
-                    intersectedObject = null;
-                }
-            }
-            // End link
-
+            // Update hovering over models for every frame
+            raycaster.update();
 
             jiggleSpheres(); // Call the jiggle function
-            controls.update();
-            renderer.render(scene, camera);
+            sceneManager.update();
 
             if (time < 1000)
             {
@@ -645,7 +377,7 @@
             }
             if (Math.abs(time - 8e3) < 10)
             {
-                updateTextForIndex(0);
+                textManager.updateTextForIndex(0);
                 loadNewJSON(1);
             }
             
@@ -658,11 +390,11 @@
                 // The odd logic makes sure that when there is a period, word generation pauses a little bit
                 if (currentWordIndexAbove == fullTextAbove.split(' ').length && currentWordIndexBelow < fullTextBelow.split(' ').length) {
                     lastWordTime = ((fullTextBelow.split(' ')[currentWordIndexBelow].slice(-1) == '.') ? (time + 800) : time);
-                    currentWordIndexBelow = revealWord(textBelowDiv, currentWordIndexBelow);
+                    currentWordIndexBelow = revealWord(textManager.textBelowDiv, currentWordIndexBelow);
                 }
                 if (currentWordIndexAbove < fullTextAbove.split(' ').length) {
                     lastWordTime = ((fullTextAbove.split(' ')[currentWordIndexAbove].slice(-1) == '.') ? (time + 800) : time);
-                    currentWordIndexAbove = revealWord(textAboveDiv, currentWordIndexAbove);
+                    currentWordIndexAbove = revealWord(textManager.textAboveDiv, currentWordIndexAbove);
                 }
             }
         }
@@ -671,9 +403,9 @@
         
         // Handle window resize
         window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            sceneManager.renderer.setSize(window.innerWidth, window.innerHeight);
+            sceneManager.camera.aspect = window.innerWidth / window.innerHeight;
+            sceneManager.camera.updateProjectionMatrix();
         });
     </script>
 </body>
