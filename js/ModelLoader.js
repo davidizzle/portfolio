@@ -7,6 +7,39 @@ class ModelLoader {
         this.vertices = null;
         this.faces = null;
         this.targetPositions = [];
+        this.currentIndex = 0;
+        this.jsonFiles = [
+            'assets/json/nothing.json', 
+            'assets/json/daggerComp4.json', 
+            'assets/json/crankshaftnew.json', 
+            'assets/json/bullnew.json', 
+            'assets/json/antenna.json'
+        ];  // List of JSON files to toggle between
+        this.modelLinks = [
+            'https://blank.page/',
+            'https://github.com/davidizzle/GSoC-Dagger.jl-Blog',
+            'https://blank.page/',
+            'https://blank.page/',
+            'https://blank.page/'
+        ];
+        this.modelDescriptions = [
+            {
+                left: "Model 1 Description: This is a detailed description of Model 1.",
+                right: "Learn more about Model 1 [here](https://example.com/model1)."
+            },
+            {
+                left: "Model 2 Description: This model is great for text generation tasks.",
+                right: "Find the documentation [here](https://example.com/model2)."
+            },
+            {
+                left: "Model 3 Description: This model excels at chat-based interactions.",
+                right: "Check the details [here](https://example.com/model3)."
+            },
+            {
+                left: "Model 3 Description: This model excels at chat-based interactions.",
+                right: "Check the details [here](https://example.com/model3)."
+            }
+        ];
     }
 
     // Loading JSON method
@@ -18,6 +51,73 @@ class ModelLoader {
             console.error('Error loading JSON:', error);
             return null;
         }
+    }
+
+    // Function to handle loading new JSON data
+    loadNewJSON(up) {
+        this.currentIndex = (this.currentIndex + up) % this.jsonFiles.length;
+        // currentIndex = (currentIndex < 0) ? (jsonFiles.length + currentIndex) : currentIndex;
+        this.loadJSON(this.jsonFiles[this.currentIndex]) // Replace with the path to your new JSON file
+            .then(data => {
+                this.scene.remove(this.lines);
+                this.lines.geometry.dispose(); // Dispose the geometry to free memory
+                this.lines.material.dispose(); // Dispose the material to free memory
+                this.lines = null; // Set lines to null after removal
+                this.faces = data.faces;
+                this.transitionToNewPositions(data.vertices);
+            });
+    }
+
+    transitionToNewPositions(newVertices) {
+
+        this.scene.remove(this.modelMesh);
+        const newTargetPositions = [];
+
+        // Update target positions based on new vertex data
+        for (let i = 0; i < newVertices.length; i += 3) {
+            const x = newVertices[i];
+            const y = newVertices[i + 1];
+            const z = newVertices[i + 2];
+            
+            // Set the target position for each sphere
+            newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
+        }
+        this.targetPositions = newTargetPositions; // Update the target positions
+
+        // Create a new buffer geometry for the model
+        const geometry = new THREE.BufferGeometry();
+        // Convert vertices array into a Float32Array and add to the geometry
+        const positions = new Float32Array(newVertices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        // Create an index array for faces
+        const indices = [];
+        this.faces.forEach(face => {
+            if (face.length === 3) {
+                // Add indices for a triangle (three vertices)
+                indices.push(face[0], face[1], face[2]);
+            } else if (face.length === 4) {
+                // For quads, split into two triangles
+                indices.push(face[0], face[1], face[2]);
+                indices.push(face[2], face[3], face[0]);
+            }
+        });
+
+        // Set the index for the geometry to use the faces
+        geometry.setIndex(indices);
+
+        // Create a material for the model
+        const material = new THREE.MeshPhongMaterial({
+            color: 0x6dd8fc,
+            transparent: true, // Allow transparency
+            opacity: 0, // Make the mesh invisible
+            depthWrite: false, // Enable to true for cool dynamic mesh effect, and set minOpacity to 0.3 or something 
+            flatShading: true
+        });
+
+        // Create the mesh and add it to the scene
+        this.modelMesh = new THREE.Mesh(geometry, material);
+        this.scene.add(this.modelMesh);
     }
 
     updateScene(data) {

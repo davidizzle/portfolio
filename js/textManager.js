@@ -11,6 +11,8 @@ class TextManager {
         ];
         this.currWordIndexAbove = 0;
         this.currWordIndexBelow = 0;
+        this.fullTextAbove = "Hi! I'm Davide.";
+        this.fullTextBelow = "I am a software engineer. Of sorts.";
     }
 
     updateTextForIndex(index) {
@@ -22,6 +24,8 @@ class TextManager {
         // Reset current word indices
         this.currWordIndexAbove = 0;
         this.currWordIndexBelow = 0;
+        this.fullTextAbove = textData.above;
+        this.fullTextBelow = textData.below;
 
         // Set up the new text content in the divs
         this.setupText(this.textAboveDiv, textData.above);

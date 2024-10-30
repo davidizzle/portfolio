@@ -11,7 +11,7 @@ class RaycasterManager{
         this.lastClick = 0;
 
         window.addEventListener('mousemove', this.onMouseMove.bind(this));
-        window.addEventListener('mousemove', this.onObjectClick.bind(this));
+        window.addEventListener('click', this.onObjectClick.bind(this));
     }
 
     onMouseMove(event) {
@@ -21,9 +21,10 @@ class RaycasterManager{
 
     onObjectClick(event) {
         if (this.intersectedObject && (performance.now() - this.lastClick) < 200 ) {
-            const url = modelLinks[currentIndex];
+            const url = this.modelLoader.modelLinks[this.modelLoader.currentIndex];
             if (url) window.open(url, '_blank');
         }
+        this.lastClick = performance.now();
     }
 
     update() {

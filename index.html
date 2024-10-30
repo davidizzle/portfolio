@@ -110,139 +110,18 @@
             { above: "Under construction...", below: "Wow, such empty..." },
             { above: "Under construction...", below: "Wow, such empty..." }
         ];
-        // Array of URLs corresponding to each model
-            const modelLinks = [
-                'https://blank.page/',
-                'https://github.com/davidizzle/GSoC-Dagger.jl-Blog',
-                'https://blank.page/',
-                'https://blank.page/',
-                'https://blank.page/'
-            ];
-        const modelDescriptions = [
-            {
-                left: "Model 1 Description: This is a detailed description of Model 1.",
-                right: "Learn more about Model 1 [here](https://example.com/model1)."
-            },
-            {
-                left: "Model 2 Description: This model is great for text generation tasks.",
-                right: "Find the documentation [here](https://example.com/model2)."
-            },
-            {
-                left: "Model 3 Description: This model excels at chat-based interactions.",
-                right: "Check the details [here](https://example.com/model3)."
-            },
-            {
-                left: "Model 3 Description: This model excels at chat-based interactions.",
-                right: "Check the details [here](https://example.com/model3)."
-            }
-            // Add descriptions for other models as needed
-        ];
-        // const textAboveDiv = document.getElementById('textAbove');
-        // const textBelowDiv = document.getElementById('textBelow');
-        let fullTextAbove = "Hi! I'm Davide.";
-        let fullTextBelow = "I am a software engineer. Of sorts.";
         const wordInterval = 150; // Time interval between words in milliseconds
         let lastWordTime = 1000; // Keeps track of when the last word was added
-        // Function to update the text when a new JSON file is loaded
-        // function updateTextForIndex(index) {
-            
-        //     index = index % textSets.length;
-        //     index = (index < 0) ? (textSets.length + index) : index;
-
-        //     const textData = textSets[index % textSets.length]; // Use modulo to loop over text sets
-
-        //     // Reset current word indices
-        //     currentWordIndexAbove = 0;
-        //     currentWordIndexBelow = 0;
-
-        //     fullTextAbove = textData.above;
-        //     fullTextBelow = textData.below;
-
-        //     // Set up the new text content in the divs
-        //     setupText(textAboveDiv, fullTextAbove);
-        //     setupText(textBelowDiv, fullTextBelow);
-        
-        // }
-        // // Function to set up text with spans for each word
-        // function setupText(element, text) {
-        //     const words = text.split(' ');
-        //     element.innerHTML = words
-        //         .map(word => `<span class="hidden-word">${word} </span>`)
-        //         .join('');
-        // }
-        // Function to reveal words by changing opacity
-        // function revealWord(element, index) {
-        //     const wordSpans = element.querySelectorAll('.hidden-word');
-        //     if (index < wordSpans.length) {
-        //         wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
-        //         return index + 1; // Return the next index
-        //     }
-        //     return index;
-        // }
+  
         // Set up the text spans for the above and below texts
-        textManager.setupText(textManager.textBelowDiv, fullTextBelow);
-        textManager.setupText(textManager.textAboveDiv, fullTextAbove);
+        textManager.setupText(textManager.textBelowDiv, textManager.fullTextBelow);
+        textManager.setupText(textManager.textAboveDiv, textManager.fullTextAbove);
         // for words to move up and down
         setTimeout(() => {
             textManager.textAboveDiv.style.top = '5%'; // Move textAbove upwards
             textManager.textBelowDiv.style.top = '90%'; // Move textBelow downwards
         }, 5000); // 5000 milliseconds = 5 seconds
         // End text variables
-
-        let currentIndex = 0;  // Track the current JSON index
-        const jsonFiles = ['assets/json/nothing.json', 'assets/json/daggerComp4.json', 'assets/json/crankshaftnew.json', 'assets/json/bullnew.json', 'assets/json/antenna.json'];  // List of JSON files to toggle between
-                
-        function transitionToNewPositions(newVertices) {
-
-            sceneManager.scene.remove(modelLoader.modelMesh);
-            const newTargetPositions = [];
-
-            // Update target positions based on new vertex data
-            for (let i = 0; i < newVertices.length; i += 3) {
-                const x = newVertices[i];
-                const y = newVertices[i + 1];
-                const z = newVertices[i + 2];
-                
-                // Set the target position for each sphere
-                newTargetPositions[i / 3] = new THREE.Vector3(x, y, z);
-            }
-            modelLoader.targetPositions = newTargetPositions; // Update the target positions
-
-            // Create a new buffer geometry for the model
-            const geometry = new THREE.BufferGeometry();
-            // Convert vertices array into a Float32Array and add to the geometry
-            const positions = new Float32Array(newVertices);
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
-            // Create an index array for faces
-            const indices = [];
-            modelLoader.faces.forEach(face => {
-                if (face.length === 3) {
-                    // Add indices for a triangle (three vertices)
-                    indices.push(face[0], face[1], face[2]);
-                } else if (face.length === 4) {
-                    // For quads, split into two triangles
-                    indices.push(face[0], face[1], face[2]);
-                    indices.push(face[2], face[3], face[0]);
-                }
-            });
-
-            // Set the index for the geometry to use the faces
-            geometry.setIndex(indices);
-
-            // Create a material for the model
-            const material = new THREE.MeshPhongMaterial({
-                color: 0x6dd8fc,
-                transparent: true, // Allow transparency
-                opacity: 0, // Make the mesh invisible
-                depthWrite: false, // Enable to true for cool dynamic mesh effect, and set minOpacity to 0.3 or something 
-                flatShading: true
-            });
-
-            // Create the mesh and add it to the scene
-            modelLoader.modelMesh = new THREE.Mesh(geometry, material);
-            sceneManager.scene.add(modelLoader.modelMesh);
-        }
 
         // Slower jiggle effect
         let Time = 0; // Time variable for slow jiggle
@@ -316,21 +195,6 @@
             const currentTime = performance.now() / 1000; // Get current time in seconds
         }
 
-        // Function to handle loading new JSON data
-        function loadNewJSON(up) {
-            currentIndex = (currentIndex + up) % jsonFiles.length;
-            // currentIndex = (currentIndex < 0) ? (jsonFiles.length + currentIndex) : currentIndex;
-            modelLoader.loadJSON(jsonFiles[currentIndex]) // Replace with the path to your new JSON file
-                .then(data => {
-                    sceneManager.scene.remove(modelLoader.lines);
-                    modelLoader.lines.geometry.dispose(); // Dispose the geometry to free memory
-                    modelLoader.lines.material.dispose(); // Dispose the material to free memory
-                    modelLoader.lines = null; // Set lines to null after removal
-                    modelLoader.faces = data.faces;
-                    transitionToNewPositions(data.vertices);
-                });
-        }
-
         // Load initial JSON file
         // Suggest edit: create big cube (or even tidus) and put it out of sight
         modelLoader.loadJSON('assets/json/tiduslat.json') // Replace with your initial JSON file path
@@ -340,11 +204,11 @@
         // window.addEventListener('click', loadNewJSON);
         window.addEventListener('keydown', function(event)  {
             if (event.key == 'ArrowRight') {
-                loadNewJSON(1);
-                textManager.updateTextForIndex(currentIndex)
+                modelLoader.loadNewJSON(1);
+                textManager.updateTextForIndex(modelLoader.currentIndex)
             } else if (event.key == 'ArrowLeft') {
-                loadNewJSON(-1);
-                textManager.updateTextForIndex(currentIndex)
+                modelLoader.loadNewJSON(-1);
+                textManager.updateTextForIndex(modelLoader.currentIndex)
             }
             const audioPlayer = document.getElementById('audioPlayer');
                 audioPlayer.muted = false; // Unmute in case it was muted
@@ -353,10 +217,10 @@
                     console.error('Error playing audio:', error);
                 });
         });
-        window.addEventListener('ArrowDown', loadNewJSON(-1));
+        window.addEventListener('ArrowDown', modelLoader.loadNewJSON(-1));
         window.addEventListener('touchstart', (event) => {
             event.preventDefault();
-            loadNewJSON(1);
+            modelLoader.loadNewJSON(1);
         });
 
         // Animation loop
@@ -376,7 +240,7 @@
             if (Math.abs(time - 8e3) < 10)
             {
                 textManager.updateTextForIndex(0);
-                loadNewJSON(1);
+                modelLoader.loadNewJSON(1);
             }
             
             // Word part
@@ -386,13 +250,13 @@
                 
                 // Update the text word by word for the below element
                 // The odd logic makes sure that when there is a period, word generation pauses a little bit
-                // TODO: Change fullTextAbove as it is a bug, and possibly move this logic all into textManager.js
-                if (textManager.currWordIndexAbove == fullTextAbove.split(' ').length && textManager.currWordIndexBelow < fullTextBelow.split(' ').length) {
-                    lastWordTime = ((fullTextBelow.split(' ')[textManager.currWordIndexBelow].slice(-1) == '.') ? (time + 800) : time);
+                // TODO: Possibly move this logic all into textManager.js
+                if (textManager.currWordIndexAbove == textManager.fullTextAbove.split(' ').length && textManager.currWordIndexBelow < textManager.fullTextBelow.split(' ').length) {
+                    lastWordTime = ((textManager.fullTextBelow.split(' ')[textManager.currWordIndexBelow].slice(-1) == '.') ? (time + 800) : time);
                     textManager.revealWord(textManager.textBelowDiv, 'below');
                 }
-                if (textManager.currWordIndexAbove < fullTextAbove.split(' ').length) {
-                    lastWordTime = ((fullTextAbove.split(' ')[textManager.currWordIndexAbove].slice(-1) == '.') ? (time + 800) : time);
+                if (textManager.currWordIndexAbove < textManager.fullTextAbove.split(' ').length) {
+                    lastWordTime = ((textManager.fullTextAbove.split(' ')[textManager.currWordIndexAbove].slice(-1) == '.') ? (time + 800) : time);
                     textManager.revealWord(textManager.textAboveDiv, 'above');
                 }
             }
