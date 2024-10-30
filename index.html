@@ -141,8 +141,6 @@
         // const textBelowDiv = document.getElementById('textBelow');
         let fullTextAbove = "Hi! I'm Davide.";
         let fullTextBelow = "I am a software engineer. Of sorts.";
-        let currentWordIndexAbove = 0;
-        let currentWordIndexBelow = 0;
         const wordInterval = 150; // Time interval between words in milliseconds
         let lastWordTime = 1000; // Keeps track of when the last word was added
         // Function to update the text when a new JSON file is loaded
@@ -173,14 +171,14 @@
         //         .join('');
         // }
         // Function to reveal words by changing opacity
-        function revealWord(element, index) {
-            const wordSpans = element.querySelectorAll('.hidden-word');
-            if (index < wordSpans.length) {
-                wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
-                return index + 1; // Return the next index
-            }
-            return index;
-        }
+        // function revealWord(element, index) {
+        //     const wordSpans = element.querySelectorAll('.hidden-word');
+        //     if (index < wordSpans.length) {
+        //         wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
+        //         return index + 1; // Return the next index
+        //     }
+        //     return index;
+        // }
         // Set up the text spans for the above and below texts
         textManager.setupText(textManager.textBelowDiv, fullTextBelow);
         textManager.setupText(textManager.textAboveDiv, fullTextAbove);
@@ -388,13 +386,14 @@
                 
                 // Update the text word by word for the below element
                 // The odd logic makes sure that when there is a period, word generation pauses a little bit
-                if (currentWordIndexAbove == fullTextAbove.split(' ').length && currentWordIndexBelow < fullTextBelow.split(' ').length) {
-                    lastWordTime = ((fullTextBelow.split(' ')[currentWordIndexBelow].slice(-1) == '.') ? (time + 800) : time);
-                    currentWordIndexBelow = revealWord(textManager.textBelowDiv, currentWordIndexBelow);
+                // TODO: Change fullTextAbove as it is a bug, and possibly move this logic all into textManager.js
+                if (textManager.currWordIndexAbove == fullTextAbove.split(' ').length && textManager.currWordIndexBelow < fullTextBelow.split(' ').length) {
+                    lastWordTime = ((fullTextBelow.split(' ')[textManager.currWordIndexBelow].slice(-1) == '.') ? (time + 800) : time);
+                    textManager.revealWord(textManager.textBelowDiv, 'below');
                 }
-                if (currentWordIndexAbove < fullTextAbove.split(' ').length) {
-                    lastWordTime = ((fullTextAbove.split(' ')[currentWordIndexAbove].slice(-1) == '.') ? (time + 800) : time);
-                    currentWordIndexAbove = revealWord(textManager.textAboveDiv, currentWordIndexAbove);
+                if (textManager.currWordIndexAbove < fullTextAbove.split(' ').length) {
+                    lastWordTime = ((fullTextAbove.split(' ')[textManager.currWordIndexAbove].slice(-1) == '.') ? (time + 800) : time);
+                    textManager.revealWord(textManager.textAboveDiv, 'above');
                 }
             }
         }

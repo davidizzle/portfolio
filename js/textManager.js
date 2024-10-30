@@ -9,6 +9,8 @@ class TextManager {
             { above: "Under construction...", below: "Wow, such empty..." },
             { above: "Under construction...", below: "Wow, such empty..." }
         ];
+        this.currWordIndexAbove = 0;
+        this.currWordIndexBelow = 0;
     }
 
     updateTextForIndex(index) {
@@ -16,10 +18,10 @@ class TextManager {
         index = (index < 0) ? (this.textSets.length + index) : index;
 
         const textData = this.textSets[index % this.textSets.length]; // Use modulo to loop over text sets
-        
+        console.log(textData);
         // Reset current word indices
-        let currentWordIndexAbove = 0;
-        let currentWordIndexBelow = 0;
+        this.currWordIndexAbove = 0;
+        this.currWordIndexBelow = 0;
 
         // Set up the new text content in the divs
         this.setupText(this.textAboveDiv, textData.above);
@@ -33,8 +35,18 @@ class TextManager {
             .join('');
     }
 
-    revealWord(element, index) {
-
+    revealWord(element, which) {
+        
+        let index = (which == 'above') ? this.currWordIndexAbove : this.currWordIndexBelow;
+        
+        const wordSpans = element.querySelectorAll('.hidden-word');
+        if (index < wordSpans.length) {
+            wordSpans[index].style.opacity = 1; // Trigger the CSS fade-in
+            index += 1; // Return the next index
+        }
+        
+        if (which == 'above') { this.currWordIndexAbove = index; } 
+        else { this.currWordIndexBelow = index; }
     }
     
 }
