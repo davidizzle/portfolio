@@ -20,7 +20,8 @@ class TextManager {
         index = (index < 0) ? (this.textSets.length + index) : index;
 
         const textData = this.textSets[index % this.textSets.length]; // Use modulo to loop over text sets
-        console.log(textData);
+        console.log(textData); 
+        
         // Reset current word indices
         this.currWordIndexAbove = 0;
         this.currWordIndexBelow = 0;
